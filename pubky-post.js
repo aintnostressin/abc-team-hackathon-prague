@@ -27,6 +27,7 @@
     .pubky-post *{box-sizing:border-box}
     .pubky-post__header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
     .pubky-post__avatar{
+      position:relative;
       width:44px;height:44px;border-radius:50%;
       background:linear-gradient(135deg,var(--pp-accent),var(--pp-accent-2));
       display:flex;align-items:center;justify-content:center;color:#fff;
@@ -34,7 +35,11 @@
       overflow:hidden;flex-shrink:0;
       box-shadow:0 4px 10px -4px rgba(99,102,241,.45);
     }
-    .pubky-post__avatar img{width:100%;height:100%;object-fit:cover}
+    .pubky-post__avatar img{
+      position:absolute;inset:0;
+      width:100%;height:100%;object-fit:cover;
+      background:inherit;
+    }
     .pubky-post__meta{display:flex;flex-direction:column;min-width:0;flex:1}
     .pubky-post__name{
       font-weight:600;color:var(--pp-fg);font-size:15px;
@@ -148,20 +153,31 @@
     return res.json();
   }
 
-  function renderAvatar(user) {
-    const img = user && user.details && user.details.image;
-    if (img && /^https?:\/\//i.test(img)) {
-      return `<img src="${escapeHtml(img)}" alt="">`;
-    }
-    return escapeHtml(initials(user && user.details && user.details.name));
+  function avatarUrl(base, user) {
+    if (!user || !user.details) return null;
+    const id = user.details.id;
+    const img = user.details.image;
+    if (!id || !img) return null;
+    if (/^https?:\/\//i.test(img)) return img;
+    const origin = String(base).replace(/\/v0\/?$/, '');
+    return `${origin}/static/avatar/${encodeURIComponent(id)}`;
   }
 
-  function renderHtml(post, user) {
+  function renderAvatar(user, base) {
+    const url = avatarUrl(base || DEFAULT_BASE, user);
+    const fallback = escapeHtml(initials(user && user.details && user.details.name));
+    if (url) {
+      return `<img src="${escapeHtml(url)}" alt="" onerror="this.remove()">${fallback}`;
+    }
+    return fallback;
+  }
+
+  function renderHtml(post, user, base) {
     const d = post.details || {};
     const name = (user && user.details && user.details.name) || 'Unknown';
     return `
       <div class="pubky-post__header">
-        <div class="pubky-post__avatar">${renderAvatar(user)}</div>
+        <div class="pubky-post__avatar">${renderAvatar(user, base)}</div>
         <div class="pubky-post__meta">
           <div class="pubky-post__name">${escapeHtml(name)}</div>
           <div class="pubky-post__handle" title="${escapeHtml(d.author || '')}">${escapeHtml(shortId(d.author))}</div>
@@ -177,7 +193,7 @@
 
   const MAX_REPLY_DEPTH = 6;
 
-  function renderReplyHtml(reply, user, hasChildren) {
+  function renderReplyHtml(reply, user, hasChildren, base) {
     const d = reply.details || {};
     const name = (user && user.details && user.details.name) || 'Unknown';
     const nested = hasChildren
@@ -185,7 +201,7 @@
       : '';
     return `
       <div class="pubky-post__reply">
-        <div class="pubky-post__avatar">${renderAvatar(user)}</div>
+        <div class="pubky-post__avatar">${renderAvatar(user, base)}</div>
         <div class="pubky-post__reply-body">
           <div class="pubky-post__reply-head">
             <div class="pubky-post__name">${escapeHtml(name)}</div>
@@ -220,7 +236,7 @@
       const canRecurse = depth + 1 < MAX_REPLY_DEPTH;
       const items = replies.map((r, i) => {
         const hasChildren = canRecurse && r && r.counts && r.counts.replies > 0;
-        return renderReplyHtml(r, users[i], hasChildren);
+        return renderReplyHtml(r, users[i], hasChildren, base);
       }).join('');
       container.innerHTML = `
         <div class="pubky-post__replies-title">${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}</div>
@@ -255,7 +271,7 @@
         fetchJson(`${base}/post/${encodeURIComponent(author)}/${encodeURIComponent(post)}`),
         fetchJson(`${base}/user/${encodeURIComponent(author)}`).catch(() => null),
       ]);
-      el.innerHTML = renderHtml(postData, userData);
+      el.innerHTML = renderHtml(postData, userData, base);
       const repliesEl = el.querySelector('[data-pubky-replies]');
       if (repliesEl) renderReplies(repliesEl, base, author, post);
       return postData;
