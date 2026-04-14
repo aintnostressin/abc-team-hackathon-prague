@@ -23,12 +23,11 @@ const POST_CSS = `
     --pp-error-border:#fecaca;
     --pp-error-fg:#b91c1c;
     font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
-    max-width:560px;border:1px solid var(--pp-border);border-radius:16px;
+    max-width:100%;border:1px solid var(--pp-border);border-radius:16px;
     padding:18px 20px;background:var(--pp-bg);color:var(--pp-fg);
     box-sizing:border-box;line-height:1.55;box-shadow:var(--pp-shadow);
     transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease;
   }
-  .pubky-post[data-pubky-full-width]{max-width:100%;width:100%}
   .pubky-post:hover{
     transform:translateY(-1px);
     border-color:rgba(99,102,241,.25);
