@@ -31,14 +31,9 @@ jobs:
           working-directory: jekyll
 
       - name: Build Jekyll site
-        run: bundle exec jekyll build --baseurl /abc-team-hackathon-prague/jekyll
+        run: bundle exec jekyll build -d ../_site_final/jekyll
         env:
           JEKYLL_ENV: production
-
-      - name: Create subfolder structure
-        run: |
-          mkdir -p ../_site_final/jekyll
-          cp -r _site/* ../_site_final/jekyll/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
