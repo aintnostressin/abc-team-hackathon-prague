@@ -409,7 +409,8 @@ function findRepliesContainerFor(actionsEl) {
 function updateReplyActions(root) {
   const me = authState.z32;
   root.querySelectorAll('[data-pubky-reply-actions]').forEach(el => {
-    const show = !!(me && el.dataset.pubkyParentAuthor && el.dataset.pubkyParentAuthor !== me);
+    const author = el.dataset.pubkyParentAuthor;
+    const show = !!me && !!author;
     el.hidden = !show;
     if (!show) { const f = el.querySelector('[data-pubky-reply-form]'); if (f) f.dataset.open = ''; }
   });
