@@ -1,5 +1,6 @@
 import { Pubky, AuthFlowKind } from 'https://cdn.jsdelivr.net/npm/@synonymdev/pubky@0.6.0/+esm';
 import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm';
+import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://cdn.jsdelivr.net/npm/pubky-app-specs@0.4.4/+esm';
 
 const DEFAULT_BASE = 'https://nexus.pubky.app/v0';
 const STAGING_BASE = 'https://nexus.staging.pubky.app/v0';
@@ -295,17 +296,6 @@ function setAuth(next) {
   } catch {}
 }
 
-const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-function createPostId() {
-  const micros = BigInt(Date.now()) * 1000n;
-  const bits = micros << 1n;
-  let s = '';
-  for (let i = 12; i >= 0; i--) {
-    s += CROCKFORD[Number((bits >> BigInt(i * 5)) & 31n)];
-  }
-  return s;
-}
-
 function replyActionsHtml(author, postId) {
   return `
     <div class="pubky-post__reply-actions" data-pubky-reply-actions
@@ -439,15 +429,11 @@ function bindReplyActions(root, base) {
       const parentAuthor = el.dataset.pubkyParentAuthor;
       const parentPostId = el.dataset.pubkyParentPost;
       try {
-        const id = createPostId();
-        const payload = {
-          content,
-          kind: 'short',
-          parent: `pubky://${parentAuthor}/pub/pubky.app/posts/${parentPostId}`,
-          embed: null,
-          attachments: null,
-        };
-        await authState.session.storage.putJson(`/pub/pubky.app/posts/${id}`, payload);
+        const parentUri = `pubky://${parentAuthor}/pub/pubky.app/posts/${parentPostId}`;
+        const builder = new PubkySpecsBuilder(authState.z32);
+        const { post, meta } = builder.createPost(content, PubkyAppPostKind.Short, parentUri, null, null);
+        const id = meta.id;
+        await authState.session.storage.putJson(`/pub/pubky.app/posts/${id}`, post.toJson());
         form.dataset.open = '';
         textarea.value = '';
         let container = findRepliesContainerFor(el);
