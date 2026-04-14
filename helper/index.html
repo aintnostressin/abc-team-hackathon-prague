@@ -41,7 +41,7 @@
     #status { font-size: 13px; color: #64748b; }
 
     /* ── Wizard view ── */
-    #wizard-view { display: none; }
+    #wizard-view, #step-2, #step-3, #step2-result { display: none; }
     button {
       display: inline-flex;
       align-items: center;
@@ -190,7 +190,7 @@
   </div>
 
   <!-- Wizard view (shown after login) -->
-  <div id="wizard-view" style="display:none">
+  <div id="wizard-view">
     <!-- User info -->
     <div id="wizard-user" class="wizard-user"></div>
 
@@ -213,13 +213,13 @@
     </div>
 
     <!-- Step 2: Creating post (automatic) -->
-    <div id="step-2" class="wizard-panel" style="display:none">
+    <div id="step-2" class="wizard-panel">
       <h2>Creating Pubky Post</h2>
       <div id="step2-loading">
         <div class="spinner step2-spinner"></div>
         <p id="step2-status" class="subtitle">Publishing your post to the Pubky network…</p>
       </div>
-      <div id="step2-result" style="display:none">
+      <div id="step2-result">
         <p class="subtitle" style="margin-bottom:12px">Post created successfully!</p>
         <div style="text-align:left;margin-bottom:12px">
           <label style="font-size:13px;font-weight:600;color:#0f172a;display:block;margin-bottom:4px">Full path</label>
@@ -235,7 +235,7 @@
     </div>
 
     <!-- Step 3: Code snippet -->
-    <div id="step-3" class="wizard-panel" style="display:none">
+    <div id="step-3" class="wizard-panel">
       <h2>Add This to Your Page</h2>
       <p class="subtitle">Paste this snippet into your blog post's HTML to enable the Pubky comment widget</p>
       <div class="snippet-wrap">
@@ -255,14 +255,13 @@ import { Pubky, AuthFlowKind } from 'https://esm.sh/@synonymdev/pubky@0.7.0';
 import QRCode from 'https://esm.sh/qrcode@1.5.4';
 import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://esm.sh/pubky-app-specs@0.4.4';
 
+const $ = id => document.getElementById(id);
 const SESSION_KEY = 'pubky-session';
 const NEXUS_ORIGIN = 'https://nexus.pubky.app';
 const AUTH_CAPS = '/pub/pubky.app/:rw';
 
-const loginView  = document.getElementById('login-view');
-const wizardView = document.getElementById('wizard-view');
-const statusEl   = document.getElementById('status');
-const errorBox   = document.getElementById('error-box');
+const loginView = $('login-view'), wizardView = $('wizard-view');
+const statusEl = $('status'), errorBox = $('error-box');
 
 function showError(el, msg) {
   el.style.display = 'block';
@@ -270,27 +269,21 @@ function showError(el, msg) {
 }
 
 function initials(name) {
-  if (!name) return '?';
-  return name.trim().split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
+  return name ? name.trim().split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase() : '?';
 }
 
 function shortKey(pk) {
-  if (!pk || pk.length < 14) return pk || '';
-  return pk.slice(0, 14) + '…' + pk.slice(-6);
+  return !pk || pk.length < 14 ? (pk || '') : pk.slice(0, 14) + '…' + pk.slice(-6);
 }
 
 function isValidUrl(str) {
-  try {
-    const url = new URL(str);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
+  try { return ['http:', 'https:'].includes(new URL(str).protocol); }
+  catch { return false; }
 }
 
 function goToStep(step) {
   [1, 2, 3].forEach(s => {
-    document.getElementById(`step-${s}`).style.display = s === step ? 'block' : 'none';
+    $(`step-${s}`).style.display = s === step ? 'block' : 'none';
     const dot = document.querySelector(`.wizard-dot[data-step="${s}"]`);
     dot.classList.toggle('done', s < step);
     dot.classList.toggle('current', s === step);
@@ -301,10 +294,10 @@ function goToStep(step) {
 }
 
 function renderUserInfo(pkStr, pkZ32, profile) {
-  const name = (profile && profile.name) || shortKey(pkStr);
+  const name = profile?.name || shortKey(pkStr);
   const avatarSrc = `${NEXUS_ORIGIN}/static/avatar/${encodeURIComponent(pkZ32)}`;
-  const fb = initials(profile && profile.name);
-  document.getElementById('wizard-user').innerHTML = `
+  const fb = initials(profile?.name);
+  $('wizard-user').innerHTML = `
     <div class="wizard-user__avatar">
       <img src="${avatarSrc}" alt="" onerror="this.remove()">${fb}
     </div>
@@ -333,25 +326,22 @@ async function showWizard(pubky, session) {
   } catch { /* ignore */ }
 
   // Step 1 → Step 2 → Step 3
-  const urlInput = document.getElementById('blog-url');
-  const urlError = document.getElementById('url-error');
-  const nextBtn  = document.getElementById('next-btn');
-  const step2NextBtn = document.getElementById('step2-next-btn');
+  const urlInput = $('blog-url'), urlError = $('url-error');
+  const nextBtn = $('next-btn'), step2NextBtn = $('step2-next-btn');
+  const step2Loading = $('step2-loading'), step2Result = $('step2-result'), step2Error = $('step2-error');
   let currentSnippet = '';
   let pendingPostId = null;
 
-  // Set up copy button once
-  document.getElementById('copy-btn').addEventListener('click', async () => {
+  $('copy-btn').addEventListener('click', async () => {
     if (!currentSnippet) return;
     try {
       await navigator.clipboard.writeText(currentSnippet);
-      document.getElementById('copy-status').textContent = '✓ Copied to clipboard!';
+      $('copy-status').textContent = '✓ Copied to clipboard!';
     } catch {
-      document.getElementById('copy-status').textContent = 'Copy failed — please select and copy manually.';
+      $('copy-status').textContent = 'Copy failed — please select and copy manually.';
     }
   });
 
-  // Set up Step 2 Next button once
   step2NextBtn.addEventListener('click', () => {
     if (!pendingPostId) return;
     goToStep(3);
@@ -365,21 +355,14 @@ async function showWizard(pubky, session) {
 
 <script type="module" src="/pubky-post.js"><\/script>`;
 
-    document.getElementById('code-snippet').textContent = currentSnippet;
+    $('code-snippet').textContent = currentSnippet;
   });
 
   nextBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();
 
-    // Validate
-    if (!url) {
-      urlError.textContent = 'Please enter a URL.';
-      urlError.style.display = 'block';
-      urlInput.classList.add('invalid');
-      return;
-    }
-    if (!isValidUrl(url)) {
-      urlError.textContent = 'Please enter a valid URL (e.g., https://example.com/blog-post).';
+    if (!url || !isValidUrl(url)) {
+      urlError.textContent = url ? 'Please enter a valid URL (e.g., https://example.com/blog-post).' : 'Please enter a URL.';
       urlError.style.display = 'block';
       urlInput.classList.add('invalid');
       return;
@@ -389,35 +372,33 @@ async function showWizard(pubky, session) {
 
     // Step 2: Create post
     goToStep(2);
-    const step2Error = document.getElementById('step2-error');
-    document.getElementById('step2-loading').style.display = 'block';
-    document.getElementById('step2-result').style.display = 'none';
+    step2Loading.style.display = 'block';
+    step2Result.style.display = 'none';
     step2Error.style.display = 'none';
 
     try {
       const specsBuilder = new PubkySpecsBuilder(pkZ32);
-      const { post, meta } = specsBuilder.createPost(url, PubkyAppPostKind.Link, /* parent */ null, /* embed */ null, /* attachments */ null);
+      const { post, meta } = specsBuilder.createPost(url, PubkyAppPostKind.Link, null, null, null);
       const postId = meta.id;
       const postPath = `/pub/pubky.app/posts/${postId}`;
       const postData = post.toJson();
 
       await session.storage.putJson(postPath, postData);
 
-      // Show post details
       pendingPostId = postId;
       const fullPath = `pubky://${pkStr}${postPath}`;
-      document.getElementById('step2-loading').style.display = 'none';
-      document.getElementById('step2-path').textContent = fullPath;
-      document.getElementById('step2-json').textContent = JSON.stringify(postData, null, 2);
-      document.getElementById('step2-result').style.display = 'block';
+      step2Loading.style.display = 'none';
+      $('step2-path').textContent = fullPath;
+      $('step2-json').textContent = JSON.stringify(postData, null, 2);
+      step2Result.style.display = 'block';
     } catch (err) {
-      document.getElementById('step2-loading').style.display = 'none';
+      step2Loading.style.display = 'none';
       showError(step2Error, err.message);
     }
   });
 
   // Sign out
-  document.getElementById('wizard-signout').addEventListener('click', () => {
+  $('wizard-signout').addEventListener('click', () => {
     localStorage.removeItem(SESSION_KEY);
     location.reload();
   });
@@ -433,7 +414,7 @@ async function main() {
       const session = await pubky.restoreSession(saved);
       await showWizard(pubky, session);
       return;
-    } catch (_) {
+    } catch {
       localStorage.removeItem(SESSION_KEY);
     }
   }
@@ -450,7 +431,7 @@ async function main() {
   // Render QR code
   try {
     await QRCode.toCanvas(
-      document.getElementById('qr-canvas'),
+      $('qr-canvas'),
       flow.authorizationUrl,
       { width: 256, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } }
     );
