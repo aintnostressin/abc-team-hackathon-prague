@@ -253,6 +253,7 @@
 <script type="module">
 import { Pubky, AuthFlowKind } from 'https://esm.sh/@synonymdev/pubky@0.7.0';
 import QRCode from 'https://esm.sh/qrcode@1.5.4';
+import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://esm.sh/pubky-app-specs@0.4.4';
 
 const SESSION_KEY = 'pubky-session';
 const NEXUS_ORIGIN = 'https://nexus.pubky.app';
@@ -285,17 +286,6 @@ function isValidUrl(str) {
   } catch {
     return false;
   }
-}
-
-function generatePostId() {
-  const CROCKFORD_BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-  let n = BigInt(Date.now()) * 1000n;
-  let s = '';
-  while (n > 0n) {
-    s = CROCKFORD_BASE32[Number(n % 32n)] + s;
-    n /= 32n;
-  }
-  return s.padStart(13, '0');
 }
 
 function goToStep(step) {
@@ -405,9 +395,11 @@ async function showWizard(pubky, session) {
     step2Error.style.display = 'none';
 
     try {
-      const postId = generatePostId();
+      const specsBuilder = new PubkySpecsBuilder(pkZ32);
+      const { post, meta } = specsBuilder.createPost(url, PubkyAppPostKind.Link, null, null, null);
+      const postId = meta.id;
       const postPath = `/pub/pubky.app/posts/${postId}`;
-      const postData = { content: url, kind: 'link', attachments: [], embed: null, parent: null };
+      const postData = post.toJson();
 
       await session.storage.putJson(postPath, postData);
 
