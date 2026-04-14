@@ -346,7 +346,9 @@ async function showWizard(pubky, session) {
   const urlInput = document.getElementById('blog-url');
   const urlError = document.getElementById('url-error');
   const nextBtn  = document.getElementById('next-btn');
+  const step2NextBtn = document.getElementById('step2-next-btn');
   let currentSnippet = '';
+  let pendingPostId = null;
 
   // Set up copy button once
   document.getElementById('copy-btn').addEventListener('click', async () => {
@@ -357,6 +359,23 @@ async function showWizard(pubky, session) {
     } catch {
       document.getElementById('copy-status').textContent = 'Copy failed — please select and copy manually.';
     }
+  });
+
+  // Set up Step 2 Next button once
+  step2NextBtn.addEventListener('click', () => {
+    if (!pendingPostId) return;
+    goToStep(3);
+
+    currentSnippet =
+`<div
+  data-pubky-author="${pkZ32}"
+  data-pubky-post="${pendingPostId}"
+  data-pubky-theme="light">
+</div>
+
+<script type="module" src="/pubky-post.js"><\/script>`;
+
+    document.getElementById('code-snippet').textContent = currentSnippet;
   });
 
   nextBtn.addEventListener('click', async () => {
@@ -381,7 +400,9 @@ async function showWizard(pubky, session) {
     // Step 2: Create post
     goToStep(2);
     const step2Error = document.getElementById('step2-error');
-    const step2Status = document.getElementById('step2-status');
+    document.getElementById('step2-loading').style.display = 'block';
+    document.getElementById('step2-result').style.display = 'none';
+    step2Error.style.display = 'none';
 
     try {
       const postId = generatePostId();
@@ -391,31 +412,14 @@ async function showWizard(pubky, session) {
       await session.storage.putJson(postPath, postData);
 
       // Show post details
+      pendingPostId = postId;
       const fullPath = `pubky://${pkStr}${postPath}`;
       document.getElementById('step2-loading').style.display = 'none';
       document.getElementById('step2-path').textContent = fullPath;
       document.getElementById('step2-json').textContent = JSON.stringify(postData, null, 2);
       document.getElementById('step2-result').style.display = 'block';
-
-      // Wait for user to click Next before advancing
-      document.getElementById('step2-next-btn').addEventListener('click', () => {
-        // Step 3: Show code snippet
-        goToStep(3);
-
-        currentSnippet =
-`<div
-  data-pubky-author="${pkZ32}"
-  data-pubky-post="${postId}"
-  data-pubky-theme="light">
-</div>
-
-<script type="module" src="/pubky-post.js"><\/script>`;
-
-        document.getElementById('code-snippet').textContent = currentSnippet;
-      });
     } catch (err) {
       document.getElementById('step2-loading').style.display = 'none';
-      step2Status.textContent = 'Failed to create post.';
       showError(step2Error, err.message);
     }
   });
