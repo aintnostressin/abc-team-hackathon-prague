@@ -396,7 +396,7 @@ async function showWizard(pubky, session) {
 
     try {
       const specsBuilder = new PubkySpecsBuilder(pkZ32);
-      const { post, meta } = specsBuilder.createPost(url, PubkyAppPostKind.Link, null, null, null);
+      const { post, meta } = specsBuilder.createPost(url, PubkyAppPostKind.Link, /* parent */ null, /* embed */ null, /* attachments */ null);
       const postId = meta.id;
       const postPath = `/pub/pubky.app/posts/${postId}`;
       const postData = post.toJson();
