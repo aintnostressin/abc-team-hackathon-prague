@@ -422,7 +422,7 @@ function updateReplyActions(root) {
   const me = authState.z32;
   root.querySelectorAll('[data-pubky-reply-actions]').forEach(el => {
     const author = el.dataset.pubkyParentAuthor;
-    const show = !!me && !!author && author !== me;
+    const show = !!me && !!author;
     el.hidden = !show;
     if (!show) {
       const form = el.querySelector('[data-pubky-reply-form]');
