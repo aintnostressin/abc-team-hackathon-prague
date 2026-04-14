@@ -274,11 +274,11 @@ function isValidUrl(str) {
 }
 
 function generatePostId() {
-  const CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  const CROCKFORD_BASE32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
   let n = BigInt(Date.now()) * 1000n;
   let s = '';
   while (n > 0n) {
-    s = CHARS[Number(n % 32n)] + s;
+    s = CROCKFORD_BASE32[Number(n % 32n)] + s;
     n /= 32n;
   }
   return s.padStart(13, '0');
@@ -332,6 +332,18 @@ async function showWizard(pubky, session) {
   const urlInput = document.getElementById('blog-url');
   const urlError = document.getElementById('url-error');
   const nextBtn  = document.getElementById('next-btn');
+  let currentSnippet = '';
+
+  // Set up copy button once
+  document.getElementById('copy-btn').addEventListener('click', async () => {
+    if (!currentSnippet) return;
+    try {
+      await navigator.clipboard.writeText(currentSnippet);
+      document.getElementById('copy-status').textContent = '✓ Copied to clipboard!';
+    } catch {
+      document.getElementById('copy-status').textContent = 'Copy failed — please select and copy manually.';
+    }
+  });
 
   nextBtn.addEventListener('click', async () => {
     const url = urlInput.value.trim();
@@ -369,7 +381,7 @@ async function showWizard(pubky, session) {
       // Step 3: Show code snippet
       goToStep(3);
 
-      const snippet =
+      currentSnippet =
 `<div
   data-pubky-author="${pkZ32}"
   data-pubky-post="${postId}"
@@ -378,17 +390,7 @@ async function showWizard(pubky, session) {
 
 <script type="module" src="/pubky-post.js"><\/script>`;
 
-      document.getElementById('code-snippet').textContent = snippet;
-
-      // Copy button
-      document.getElementById('copy-btn').addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(snippet);
-          document.getElementById('copy-status').textContent = '✓ Copied to clipboard!';
-        } catch {
-          document.getElementById('copy-status').textContent = 'Copy failed — please select and copy manually.';
-        }
-      });
+      document.getElementById('code-snippet').textContent = currentSnippet;
     } catch (err) {
       step2Status.textContent = 'Failed to create post.';
       showError(step2Error, err.message);
