@@ -279,7 +279,9 @@ async function fetchPostTags(base, author, postId) {
   try {
     const url = `${base}/post/${encodeURIComponent(author)}/${encodeURIComponent(postId)}/tags`;
     const tags = await fetchJson(url);
-    return Array.isArray(tags) ? tags : [];
+    if (!Array.isArray(tags)) return [];
+    // Normalize tag format to always return an array of label strings
+    return tags.map(tag => tag?.label || tag?.tag_label || tag).filter(Boolean);
   } catch {
     return [];
   }
@@ -287,11 +289,9 @@ async function fetchPostTags(base, author, postId) {
 
 function renderTagsHtml(tags) {
   if (!Array.isArray(tags) || tags.length === 0) return '';
-  const tagElements = tags.map(tag => {
-    const label = tag?.label || tag?.tag_label || tag;
-    if (!label) return '';
-    return `<span class="pubky-post__tag">${escapeHtml(label)}</span>`;
-  }).filter(Boolean).join('');
+  const tagElements = tags.map(label => 
+    `<span class="pubky-post__tag">${escapeHtml(label)}</span>`
+  ).join('');
   return tagElements ? `<div class="pubky-post__tags">${tagElements}</div>` : '';
 }
 
@@ -508,16 +508,18 @@ async function renderReplies(container, base, author, post, depth, useStaging) {
         : '';
       return;
     }
+    // Extract author and id from each reply once to avoid duplication
+    const replyDetails = replies.map(r => ({
+      author: r?.details?.author,
+      id: r?.details?.id
+    }));
     const [users, tags] = await Promise.all([
-      Promise.all(replies.map(r => {
-        const a = r?.details?.author;
-        return a ? fetchJson(`${base}/user/${encodeURIComponent(a)}`).catch(() => null) : null;
-      })),
-      Promise.all(replies.map(r => {
-        const a = r?.details?.author;
-        const id = r?.details?.id;
-        return (a && id) ? fetchPostTags(base, a, id) : [];
-      }))
+      Promise.all(replyDetails.map(d =>
+        d.author ? fetchJson(`${base}/user/${encodeURIComponent(d.author)}`).catch(() => null) : null
+      )),
+      Promise.all(replyDetails.map(d =>
+        (d.author && d.id) ? fetchPostTags(base, d.author, d.id) : []
+      ))
     ]);
     const canRecurse = depth + 1 < MAX_REPLY_DEPTH;
     const items = replies.map((r, i) => {
