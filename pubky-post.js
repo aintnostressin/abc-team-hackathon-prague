@@ -28,6 +28,7 @@ const POST_CSS = `
     box-sizing:border-box;line-height:1.55;box-shadow:var(--pp-shadow);
     transition:transform .15s ease,box-shadow .2s ease,border-color .2s ease;
   }
+  .pubky-post[data-pubky-full-width]{max-width:100%;width:100%}
   .pubky-post:hover{
     transform:translateY(-1px);
     border-color:rgba(99,102,241,.25);

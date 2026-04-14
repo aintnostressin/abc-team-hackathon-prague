@@ -18,7 +18,8 @@ Quisque sit amet est et sapien ullamcorper pharetra. Vestibulum erat wisi, condi
   data-pubky-author="gujx6qd8ksydh1makdphd3bxu351d9b8waqka8hfg6q7hnqkxexo"
   data-pubky-post="0033QP8EZJ2A0"
   data-pubky-theme="light"
-  data-pubky-use-staging="true">
+  data-pubky-use-staging="true"
+  data-pubky-full-width>
 </div>
 
 <script type="module" src="https://raw.githubusercontent.com/aintnostressin/abc-team-hackathon-prague/refs/heads/main/pubky-post.js"></script>
