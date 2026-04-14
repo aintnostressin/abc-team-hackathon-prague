@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pubky Profile</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 2px 4px rgba(15,23,42,.06), 0 16px 40px -16px rgba(15,23,42,.14);
+      padding: 40px 32px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 { font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .subtitle { font-size: 14px; color: #64748b; margin-bottom: 28px; }
+
+    /* ── Login view ── */
+    #qr-wrap {
+      display: inline-block;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      line-height: 0;
+    }
+    #qr-wrap canvas { display: block; }
+    #status { font-size: 13px; color: #64748b; }
+
+    /* ── Profile view ── */
+    #profile-view { display: none; }
+    .avatar-wrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      position: relative;
+    }
+    .avatar-wrap img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #username { font-size: 22px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    #pubkey {
+      font-size: 11px;
+      color: #94a3b8;
+      font-family: ui-monospace, monospace;
+      word-break: break-all;
+      margin-bottom: 24px;
+    }
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: 1.5px solid #e2e8f0;
+      background: #fff;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    button:hover { background: #f8fafc; border-color: #cbd5e1; }
+
+    /* ── Error ── */
+    #error-box {
+      display: none;
+      font-size: 13px;
+      color: #b91c1c;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 16px;
+      text-align: left;
+    }
+
+    /* ── Spinner ── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid #e2e8f0;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Login view (default) -->
+  <div id="login-view">
+    <h1>Sign in with Pubky</h1>
+    <p class="subtitle">Scan with <strong>Pubky Ring</strong> or any Pubky-compatible signer</p>
+    <div id="qr-wrap"><canvas id="qr-canvas"></canvas></div>
+    <p id="status">Generating QR…</p>
+    <div id="error-box"></div>
+  </div>
+
+  <!-- Profile view (shown after login) -->
+  <div id="profile-view">
+    <div class="avatar-wrap" id="avatar-wrap">
+      <span id="avatar-initials"></span>
+      <img id="avatar-img" src="" alt="" onerror="this.remove()">
+    </div>
+    <div id="username">Loading…</div>
+    <div id="pubkey"></div>
+    <button id="signout-btn">Sign out</button>
+    <div id="error-box2" style="display:none;font-size:13px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:16px;text-align:left;"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { Pubky, AuthFlowKind } from 'https://esm.sh/@synonymdev/pubky@0.7.0';
+import QRCode from 'https://esm.sh/qrcode@1.5.4';
+
+const SESSION_KEY = 'pubky-session';
+const NEXUS_ORIGIN = 'https://nexus.pubky.app';
+
+const loginView   = document.getElementById('login-view');
+const profileView = document.getElementById('profile-view');
+const statusEl    = document.getElementById('status');
+const errorBox    = document.getElementById('error-box');
+
+function showError(el, msg) {
+  el.style.display = 'block';
+  el.textContent = msg;
+}
+
+function initials(name) {
+  if (!name) return '?';
+  return name.trim().split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
+}
+
+async function showProfile(pubky, session) {
+  loginView.style.display  = 'none';
+  profileView.style.display = 'block';
+
+  const pk    = session.info.publicKey;
+  const pkStr = pk.toString();   // "pubky<z32>" — display format
+  const pkZ32 = pk.z32();        // raw z32 — for nexus / addresses
+
+  // Short display of the public key
+  document.getElementById('pubkey').textContent =
+    pkStr.slice(0, 14) + '…' + pkStr.slice(-6);
+
+  // Fetch profile.json from public storage
+  let profile = {};
+  try {
+    profile = await pubky.publicStorage.getJson(
+      `${pkStr}/pub/pubky.app/profile.json`
+    );
+  } catch (e) {
+    const eb = document.getElementById('error-box2');
+    showError(eb, 'Could not load profile: ' + e.message);
+  }
+
+  const name = profile.name || pkStr;
+  document.getElementById('username').textContent = name;
+  document.getElementById('avatar-initials').textContent = initials(name);
+
+  // Avatar: use nexus static endpoint (cached / proxied)
+  const img = document.getElementById('avatar-img');
+  img.src = `${NEXUS_ORIGIN}/static/avatar/${encodeURIComponent(pkZ32)}`;
+
+  // Sign-out
+  document.getElementById('signout-btn').addEventListener('click', () => {
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+  });
+}
+
+async function main() {
+  const pubky = new Pubky();
+
+  // Try to restore an existing session from localStorage
+  const saved = localStorage.getItem(SESSION_KEY);
+  if (saved) {
+    try {
+      const session = await pubky.restoreSession(saved);
+      await showProfile(pubky, session);
+      return;
+    } catch (_) {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  }
+
+  // Start QR auth flow (empty caps = identity only)
+  let flow;
+  try {
+    flow = pubky.startAuthFlow('', AuthFlowKind.signin());
+  } catch (e) {
+    showError(errorBox, 'Failed to start auth flow: ' + e.message);
+    return;
+  }
+
+  // Render QR code
+  try {
+    await QRCode.toCanvas(
+      document.getElementById('qr-canvas'),
+      flow.authorizationUrl,
+      { width: 256, margin: 1, color: { dark: '#0f172a', light: '#ffffff' } }
+    );
+    statusEl.textContent = 'Waiting for approval…';
+  } catch (e) {
+    showError(errorBox, 'Failed to render QR: ' + e.message);
+    return;
+  }
+
+  // Wait for the user to approve via their signer
+  try {
+    const session = await flow.awaitApproval();
+    localStorage.setItem(SESSION_KEY, session.export());
+    await showProfile(pubky, session);
+  } catch (e) {
+    showError(errorBox, 'Auth failed: ' + e.message);
+    statusEl.textContent = 'Authentication failed.';
+  }
+}
+
+main().catch(e => showError(errorBox, 'Unexpected error: ' + e.message));
+</script>
+</body>
+</html>
