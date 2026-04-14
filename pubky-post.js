@@ -2,6 +2,7 @@
   'use strict';
 
   const DEFAULT_BASE = 'https://nexus.pubky.app/v0';
+  const STAGING_BASE = 'https://nexus.staging.pubky.app/v0';
   const STYLE_ID = 'pubky-post-styles';
 
   const CSS = `
@@ -153,7 +154,8 @@
     if (!el) throw new Error('PubkyPost.render: target element not found');
     const author = opts && opts.author;
     const post = opts && opts.post;
-    const base = (opts && opts.baseUrl) || DEFAULT_BASE;
+    const useStaging = opts && opts.use_staging === true;
+    const base = (opts && opts.baseUrl) || (useStaging ? STAGING_BASE : DEFAULT_BASE);
     if (!author || !post) throw new Error('PubkyPost.render: author and post are required');
 
     injectStyles(el.ownerDocument || document);
@@ -183,6 +185,7 @@
         author: n.dataset.pubkyAuthor,
         post: n.dataset.pubkyPost,
         baseUrl: n.dataset.pubkyBase,
+        use_staging: n.dataset.pubkyUseStaging === 'true',
       }).catch(() => {});
     });
   }
