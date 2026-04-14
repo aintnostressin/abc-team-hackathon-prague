@@ -107,9 +107,10 @@ const POST_CSS = `
   }
   .pubky-post__reply .pubky-post__replies-title{font-size:11px}
   .pubky-post__replies-empty{font-size:13px;color:var(--pp-muted)}
-  .pubky-post__login{margin:0 0 12px 0}
-  .pubky-post__login .pubky-login{
-    max-width:100%;border:0;box-shadow:none;background:transparent;
+  .pubky-post__login.pubky-login{
+    margin:0 0 12px 0;width:100%;max-width:none;
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+    border:0;box-shadow:none;background:transparent;
     padding:0;border-radius:0;font-family:inherit;color:inherit;
   }
   .pubky-post__login .pubky-login button{
