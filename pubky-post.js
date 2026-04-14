@@ -292,7 +292,7 @@ function renderTagsHtml(tags) {
   const tagElements = tags.map(label => 
     `<span class="pubky-post__tag">${escapeHtml(label)}</span>`
   ).join('');
-  return tagElements ? `<div class="pubky-post__tags">${tagElements}</div>` : '';
+  return `<div class="pubky-post__tags">${tagElements}</div>`;
 }
 
 function avatarUrl(base, user) {
@@ -508,16 +508,16 @@ async function renderReplies(container, base, author, post, depth, useStaging) {
         : '';
       return;
     }
-    // Extract author and id from each reply once to avoid duplication
-    const replyDetails = replies.map(r => ({
+    // Extract author and id from each reply once for API calls
+    const replyIdentifiers = replies.map(r => ({
       author: r?.details?.author,
       id: r?.details?.id
     }));
     const [users, tags] = await Promise.all([
-      Promise.all(replyDetails.map(d =>
+      Promise.all(replyIdentifiers.map(d =>
         d.author ? fetchJson(`${base}/user/${encodeURIComponent(d.author)}`).catch(() => null) : null
       )),
-      Promise.all(replyDetails.map(d =>
+      Promise.all(replyIdentifiers.map(d =>
         (d.author && d.id) ? fetchPostTags(base, d.author, d.id) : []
       ))
     ]);
