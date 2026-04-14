@@ -231,7 +231,7 @@ function formatTime(ms) {
 
 function pubkyPostUrl(postId, authorId, useStaging) {
   const host = useStaging ? 'staging.pubky.app' : 'pubky.app';
-  return `https://${host}/post/${encodeURIComponent(postId)}/${encodeURIComponent(authorId)}`;
+  return `https://${host}/post/${encodeURIComponent(authorId)}/${encodeURIComponent(postId)}`;
 }
 
 function initials(name) {
