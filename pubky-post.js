@@ -106,35 +106,6 @@ const POST_CSS = `
   }
   .pubky-post__login .pubky-login{
     max-width:100%;border-radius:10px;padding:12px 14px;
-  .pubky-post__reply-actions{margin-top:8px}
-  .pubky-post__reply-btn{
-    background:none;border:1px solid var(--pp-border);border-radius:8px;
-    color:var(--pp-muted);font-size:12px;font-weight:600;padding:4px 10px;
-    cursor:pointer;transition:background .15s,color .15s,border-color .15s;
-  }
-  .pubky-post__reply-btn:hover{background:rgba(99,102,241,.08);color:var(--pp-accent);border-color:var(--pp-accent)}
-  .pubky-post__reply-form{
-    display:none;flex-direction:column;gap:8px;margin-top:8px;
-    padding:10px;border:1px solid var(--pp-border);border-radius:10px;
-    background:rgba(99,102,241,.04);
-  }
-  .pubky-post__reply-form[data-open="1"]{display:flex}
-  .pubky-post__reply-form textarea{
-    width:100%;min-height:64px;resize:vertical;font:inherit;font-size:14px;
-    color:var(--pp-fg);background:var(--pp-bg);
-    border:1px solid var(--pp-border);border-radius:8px;padding:8px 10px;
-    box-sizing:border-box;outline:none;
-  }
-  .pubky-post__reply-form textarea:focus{border-color:var(--pp-accent)}
-  .pubky-post__reply-form-row{display:flex;gap:8px;justify-content:flex-end;align-items:center}
-  .pubky-post__reply-form-err{color:var(--pp-error-fg);font-size:12px;margin-right:auto}
-  .pubky-post__reply-form button{
-    border-radius:8px;font-size:13px;font-weight:600;padding:6px 12px;cursor:pointer;border:0;
-  }
-  .pubky-post__reply-form .pubky-post__reply-submit{background:var(--pp-accent);color:#fff}
-  .pubky-post__reply-form .pubky-post__reply-submit:disabled{opacity:.6;cursor:wait}
-  .pubky-post__reply-form .pubky-post__reply-cancel{
-    background:transparent;color:var(--pp-muted);border:1px solid var(--pp-border);
   }
   .pubky-post--loading::before{
     content:"";width:12px;height:12px;border-radius:50%;
