@@ -107,9 +107,10 @@ const POST_CSS = `
   }
   .pubky-post__reply .pubky-post__replies-title{font-size:11px}
   .pubky-post__replies-empty{font-size:13px;color:var(--pp-muted)}
-  .pubky-post__login{margin:0 0 12px 0}
-  .pubky-post__login .pubky-login{
-    max-width:100%;border:0;box-shadow:none;background:transparent;
+  .pubky-post__login.pubky-login{
+    margin:0 0 12px 0;width:100%;max-width:none;
+    display:flex;flex-direction:column;align-items:center;text-align:center;
+    border:0;box-shadow:none;background:transparent;
     padding:0;border-radius:0;font-family:inherit;color:inherit;
   }
   .pubky-post__login .pubky-login button{
@@ -292,33 +293,30 @@ async function fetchJson(url) {
 }
 
 function avatarUrl(base, user) {
-  if (!user || !user.details) return null;
-  const id = user.details.id;
-  const img = user.details.image;
+  const { id, image: img } = user?.details || {};
   if (!id || !img) return null;
   if (/^https?:\/\//i.test(img)) return img;
-  const origin = String(base).replace(/\/v0\/?$/, '');
-  return `${origin}/static/avatar/${encodeURIComponent(id)}`;
+  return `${String(base).replace(/\/v0\/?$/, '')}/static/avatar/${encodeURIComponent(id)}`;
 }
 
 function renderAvatar(user, base) {
   const url = avatarUrl(base || DEFAULT_BASE, user);
-  const fallback = escapeHtml(initials(user && user.details && user.details.name));
-  if (url) {
-    return `<img src="${escapeHtml(url)}" alt="" onerror="this.remove()">${fallback}`;
-  }
-  return fallback;
+  const fallback = escapeHtml(initials(user?.details?.name));
+  return url ? `<img src="${escapeHtml(url)}" alt="" onerror="this.remove()">${fallback}` : fallback;
 }
 
 const AUTH_EVENT = 'pubky:auth';
 const authState = { z32: null, session: null };
 
 function setAuth(next) {
-  authState.z32 = next ? next.z32 : null;
-  authState.session = next ? next.session : null;
-  try {
-    window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { z32: authState.z32 } }));
-  } catch {}
+  authState.z32 = next?.z32 ?? null;
+  authState.session = next?.session ?? null;
+  try { window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { z32: authState.z32 } })); } catch {}
+}
+
+function timeHtml(d, useStaging) {
+  const s = escapeHtml(formatTime(d.indexed_at));
+  return d.id && d.author ? `<a href="${escapeHtml(pubkyPostUrl(d.id, d.author, useStaging))}" target="_blank" rel="noopener noreferrer">${s}</a>` : s;
 }
 
 function replyActionsHtml(author, postId) {
@@ -342,11 +340,7 @@ function replyActionsHtml(author, postId) {
 
 function renderHtml(post, user, base, useStaging) {
   const d = post.details || {};
-  const name = (user && user.details && user.details.name) || 'Unknown';
-  const timeStr = escapeHtml(formatTime(d.indexed_at));
-  const timeHtml = d.id && d.author
-    ? `<a href="${escapeHtml(pubkyPostUrl(d.id, d.author, useStaging))}" target="_blank" rel="noopener noreferrer">${timeStr}</a>`
-    : timeStr;
+  const name = user?.details?.name || 'Unknown';
   return `
     <div class="pubky-post__login" data-pubky-post-login></div>
     <div class="pubky-post__header">
@@ -355,7 +349,7 @@ function renderHtml(post, user, base, useStaging) {
         <div class="pubky-post__name">${escapeHtml(name)}</div>
         <div class="pubky-post__handle" title="${escapeHtml(d.author || '')}">${escapeHtml(shortId(d.author))}</div>
       </div>
-      <div class="pubky-post__time">${timeHtml}</div>
+      <div class="pubky-post__time">${timeHtml(d, useStaging)}</div>
     </div>
     <div class="pubky-post__content">${escapeHtml(d.content)}</div>
     ${replyActionsHtml(d.author, d.id)}
@@ -369,14 +363,10 @@ const MAX_REPLY_DEPTH = 6;
 
 function renderReplyHtml(reply, user, hasChildren, base, useStaging) {
   const d = reply.details || {};
-  const name = (user && user.details && user.details.name) || 'Unknown';
+  const name = user?.details?.name || 'Unknown';
   const nested = hasChildren
     ? `<div class="pubky-post__replies" data-pubky-replies data-pubky-reply-author="${escapeHtml(d.author || '')}" data-pubky-reply-id="${escapeHtml(d.id || '')}"><div class="pubky-post--loading">Loading replies…</div></div>`
     : '';
-  const timeStr = escapeHtml(formatTime(d.indexed_at));
-  const timeHtml = d.id && d.author
-    ? `<a href="${escapeHtml(pubkyPostUrl(d.id, d.author, useStaging))}" target="_blank" rel="noopener noreferrer">${timeStr}</a>`
-    : timeStr;
   return `
     <div class="pubky-post__reply">
       <div class="pubky-post__avatar">${renderAvatar(user, base)}</div>
@@ -384,7 +374,7 @@ function renderReplyHtml(reply, user, hasChildren, base, useStaging) {
         <div class="pubky-post__reply-head">
           <div class="pubky-post__name">${escapeHtml(name)}</div>
           <div class="pubky-post__handle" title="${escapeHtml(d.author || '')}">${escapeHtml(shortId(d.author))}</div>
-          <div class="pubky-post__time" style="margin-left:auto">${timeHtml}</div>
+          <div class="pubky-post__time" style="margin-left:auto">${timeHtml(d, useStaging)}</div>
         </div>
         <div class="pubky-post__content">${escapeHtml(d.content)}</div>
         ${replyActionsHtml(d.author, d.id)}
@@ -404,7 +394,7 @@ async function pollForReply(container, base, parentAuthor, parentPostId, expecte
         + `&post_id=${encodeURIComponent(parentPostId)}`
         + `&sorting=timeline&limit=100`;
       const replies = await fetchJson(url);
-      if (Array.isArray(replies) && replies.some(r => r && r.details && r.details.id === expectedId)) {
+      if (Array.isArray(replies) && replies.some(r => r?.details?.id === expectedId)) {
         return renderReplies(container, base, parentAuthor, parentPostId, 0, useStaging);
       }
     } catch {}
@@ -413,9 +403,7 @@ async function pollForReply(container, base, parentAuthor, parentPostId, expecte
 }
 
 function findRepliesContainerFor(actionsEl) {
-  const host = actionsEl.parentElement;
-  if (!host) return null;
-  return host.querySelector(':scope > [data-pubky-replies]');
+  return actionsEl.parentElement?.querySelector(':scope > [data-pubky-replies]') ?? null;
 }
 
 function updateReplyActions(root) {
@@ -424,10 +412,7 @@ function updateReplyActions(root) {
     const author = el.dataset.pubkyParentAuthor;
     const show = !!me && !!author;
     el.hidden = !show;
-    if (!show) {
-      const form = el.querySelector('[data-pubky-reply-form]');
-      if (form) form.dataset.open = '';
-    }
+    if (!show) { const f = el.querySelector('[data-pubky-reply-form]'); if (f) f.dataset.open = ''; }
   });
 }
 
@@ -519,12 +504,12 @@ async function renderReplies(container, base, author, post, depth, useStaging) {
       return;
     }
     const users = await Promise.all(replies.map(r => {
-      const a = r && r.details && r.details.author;
+      const a = r?.details?.author;
       return a ? fetchJson(`${base}/user/${encodeURIComponent(a)}`).catch(() => null) : null;
     }));
     const canRecurse = depth + 1 < MAX_REPLY_DEPTH;
     const items = replies.map((r, i) => {
-      const hasChildren = canRecurse && r && r.counts && r.counts.replies > 0;
+      const hasChildren = canRecurse && r?.counts?.replies > 0;
       return renderReplyHtml(r, users[i], hasChildren, base, useStaging);
     }).join('');
     container.innerHTML = `
@@ -548,15 +533,12 @@ async function renderReplies(container, base, author, post, depth, useStaging) {
 async function render(el, opts) {
   if (typeof el === 'string') el = document.querySelector(el);
   if (!el) throw new Error('PubkyPost.render: target element not found');
-  const author = opts && opts.author;
-  const post = opts && opts.post;
-  const useStaging = opts && opts.useStaging;
-  const base = (opts && opts.baseUrl) || (useStaging ? STAGING_BASE : DEFAULT_BASE);
+  const { author, post, useStaging, baseUrl, theme } = opts || {};
+  const base = baseUrl || (useStaging ? STAGING_BASE : DEFAULT_BASE);
   if (!author || !post) throw new Error('PubkyPost.render: author and post are required');
 
   injectStyles(el.ownerDocument || document, POST_STYLE_ID, POST_CSS);
   el.classList.add('pubky-post');
-  const theme = opts && opts.theme;
   if (theme && THEMES.indexOf(theme) !== -1) el.setAttribute('data-pp-theme', theme);
   el.innerHTML = '<div class="pubky-post--loading">Loading post…</div>';
 
@@ -583,17 +565,7 @@ async function render(el, opts) {
   }
 }
 
-const isMobile = () => /Android|iPhone|iPad/i.test(navigator.userAgent);
-
-async function fetchUserDetails(base, z32) {
-  try {
-    const res = await fetch(`${base}/user/${encodeURIComponent(z32)}`);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
+const fetchUserDetails = (base, z32) => fetchJson(`${base}/user/${encodeURIComponent(z32)}`).catch(() => null);
 
 function renderSignedIn(el, base, z32, user) {
   const name = user?.details?.name || shortId(z32);
@@ -625,8 +597,8 @@ export async function startLogin(el, opts) {
   injectStyles(el.ownerDocument || document, LOGIN_STYLE_ID, LOGIN_CSS);
   el.classList.add('pubky-login');
 
-  const useStaging = (opts && opts.useStaging != null ? opts.useStaging : el.dataset.pubkyUseStaging === 'true');
-  const base = (opts && opts.base) || el.dataset.pubkyBase || (useStaging ? STAGING_BASE : DEFAULT_BASE);
+  const useStaging = opts?.useStaging ?? (el.dataset.pubkyUseStaging === 'true');
+  const base = opts?.base || el.dataset.pubkyBase || (useStaging ? STAGING_BASE : DEFAULT_BASE);
   const pubky = new Pubky();
 
   const showSignedIn = async (z32) => {
@@ -657,7 +629,7 @@ export async function startLogin(el, opts) {
     const flow = pubky.startAuthFlow(LOGIN_CAPABILITIES, AuthFlowKind.signin());
     const url = flow.authorizationUrl;
 
-    if (isMobile()) {
+    if (/Android|iPhone|iPad/i.test(navigator.userAgent)) {
       el.innerHTML = `
         <a href="${url}">Open Pubky Ring →</a>
         <div class="pubky-login__status">Waiting for approval…</div>`;
@@ -704,11 +676,9 @@ const PubkyPost = { render, autoRender, startLogin, _baseUrl: DEFAULT_BASE };
 if (typeof window !== 'undefined') window.PubkyPost = PubkyPost;
 
 if (typeof document !== 'undefined') {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => autoRender());
-  } else {
-    autoRender();
-  }
+  document.readyState === 'loading'
+    ? document.addEventListener('DOMContentLoaded', () => autoRender())
+    : autoRender();
 }
 
 export { render, autoRender };
