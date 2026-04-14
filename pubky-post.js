@@ -9,7 +9,7 @@ const LOGIN_STYLE_ID = 'pubky-login-styles';
 const LOGIN_STORAGE_KEY = 'pubky-login-session';
 const LOGIN_CAPABILITIES = '/pub/pubky.app/:rw';
 
-const THEMES = ['auto', 'light', 'dark', 'midnight', 'sepia'];
+const THEMES = ['auto', 'light', 'dark'];
 
 const POST_CSS = `
   .pubky-post{
@@ -177,31 +177,6 @@ const POST_CSS = `
     --pp-error-border:rgba(185,28,28,.4);
     --pp-error-fg:#fca5a5;
   }
-  .pubky-post[data-pp-theme="midnight"]{
-    --pp-bg:#0a0a1a;
-    --pp-fg:#e0e7ff;
-    --pp-muted:#8b8bb3;
-    --pp-border:rgba(139,139,179,.18);
-    --pp-accent:#a78bfa;
-    --pp-accent-2:#f472b6;
-    --pp-shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px -12px rgba(167,139,250,.35);
-    --pp-error-bg:rgba(185,28,28,.18);
-    --pp-error-border:rgba(185,28,28,.45);
-    --pp-error-fg:#fca5a5;
-  }
-  .pubky-post[data-pp-theme="sepia"]{
-    --pp-bg:#f4ecd8;
-    --pp-fg:#433422;
-    --pp-muted:#8a7355;
-    --pp-border:rgba(67,52,34,.15);
-    --pp-accent:#a0522d;
-    --pp-accent-2:#c2763a;
-    --pp-shadow:0 1px 2px rgba(67,52,34,.06),0 8px 24px -12px rgba(67,52,34,.2);
-    --pp-error-bg:#fdecea;
-    --pp-error-border:#e8b4ad;
-    --pp-error-fg:#8a2a1f;
-  }
-
   @media (prefers-color-scheme:dark){
     .pubky-post:not([data-pp-theme]),
     .pubky-post[data-pp-theme="auto"]{
