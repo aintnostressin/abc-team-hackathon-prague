@@ -4,6 +4,8 @@
   const DEFAULT_BASE = 'https://nexus.pubky.app/v0';
   const STYLE_ID = 'pubky-post-styles';
 
+  const THEMES = ['auto', 'light', 'dark', 'midnight', 'sepia'];
+
   const CSS = `
     .pubky-post{
       --pp-bg:#ffffff;
@@ -13,6 +15,9 @@
       --pp-accent:#6366f1;
       --pp-accent-2:#8b5cf6;
       --pp-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px -12px rgba(15,23,42,.12);
+      --pp-error-bg:#fef2f2;
+      --pp-error-border:#fecaca;
+      --pp-error-fg:#b91c1c;
       font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif;
       max-width:560px;border:1px solid var(--pp-border);border-radius:16px;
       padding:18px 20px;background:var(--pp-bg);color:var(--pp-fg);
@@ -60,8 +65,8 @@
       font-size:15px;color:var(--pp-fg);
     }
     .pubky-post__error{
-      color:#b91c1c;font-size:14px;
-      background:#fef2f2;border:1px solid #fecaca;
+      color:var(--pp-error-fg);font-size:14px;
+      background:var(--pp-error-bg);border:1px solid var(--pp-error-border);
       padding:10px 12px;border-radius:8px;
     }
     .pubky-post--loading{
@@ -97,15 +102,54 @@
       animation:pubky-post-spin .7s linear infinite;
     }
     @keyframes pubky-post-spin{to{transform:rotate(360deg)}}
+
+    .pubky-post[data-pp-theme="dark"]{
+      --pp-bg:#0f172a;
+      --pp-fg:#f1f5f9;
+      --pp-muted:#94a3b8;
+      --pp-border:rgba(148,163,184,.18);
+      --pp-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+      --pp-error-bg:rgba(185,28,28,.15);
+      --pp-error-border:rgba(185,28,28,.4);
+      --pp-error-fg:#fca5a5;
+    }
+    .pubky-post[data-pp-theme="midnight"]{
+      --pp-bg:#0a0a1a;
+      --pp-fg:#e0e7ff;
+      --pp-muted:#8b8bb3;
+      --pp-border:rgba(139,139,179,.18);
+      --pp-accent:#a78bfa;
+      --pp-accent-2:#f472b6;
+      --pp-shadow:0 1px 2px rgba(0,0,0,.5),0 8px 24px -12px rgba(167,139,250,.35);
+      --pp-error-bg:rgba(185,28,28,.18);
+      --pp-error-border:rgba(185,28,28,.45);
+      --pp-error-fg:#fca5a5;
+    }
+    .pubky-post[data-pp-theme="sepia"]{
+      --pp-bg:#f4ecd8;
+      --pp-fg:#433422;
+      --pp-muted:#8a7355;
+      --pp-border:rgba(67,52,34,.15);
+      --pp-accent:#a0522d;
+      --pp-accent-2:#c2763a;
+      --pp-shadow:0 1px 2px rgba(67,52,34,.06),0 8px 24px -12px rgba(67,52,34,.2);
+      --pp-error-bg:#fdecea;
+      --pp-error-border:#e8b4ad;
+      --pp-error-fg:#8a2a1f;
+    }
+
     @media (prefers-color-scheme:dark){
-      .pubky-post{
+      .pubky-post:not([data-pp-theme]),
+      .pubky-post[data-pp-theme="auto"]{
         --pp-bg:#0f172a;
         --pp-fg:#f1f5f9;
         --pp-muted:#94a3b8;
         --pp-border:rgba(148,163,184,.18);
         --pp-shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
+        --pp-error-bg:rgba(185,28,28,.15);
+        --pp-error-border:rgba(185,28,28,.4);
+        --pp-error-fg:#fca5a5;
       }
-      .pubky-post__error{background:rgba(185,28,28,.15);border-color:rgba(185,28,28,.4);color:#fca5a5}
     }
   `;
 
@@ -264,6 +308,8 @@
 
     injectStyles(el.ownerDocument || document);
     el.classList.add('pubky-post');
+    const theme = opts && opts.theme;
+    if (theme && THEMES.indexOf(theme) !== -1) el.setAttribute('data-pp-theme', theme);
     el.innerHTML = '<div class="pubky-post--loading">Loading post…</div>';
 
     try {
@@ -291,6 +337,7 @@
         author: n.dataset.pubkyAuthor,
         post: n.dataset.pubkyPost,
         baseUrl: n.dataset.pubkyBase,
+        theme: n.dataset.pubkyTheme,
       }).catch(() => {});
     });
   }
