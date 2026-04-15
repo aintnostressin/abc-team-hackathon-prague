@@ -184,6 +184,15 @@ const POST_CSS = `
   }
   .pubky-post__reply-form .pubky-post__reply-submit{background:var(--pp-accent);color:#fff}
   .pubky-post__reply-form .pubky-post__reply-submit:disabled{opacity:.6;cursor:wait}
+  .pubky-post__init{text-align:center;padding:4px 0}
+  .pubky-post__init-msg{color:var(--pp-muted);font-size:14px;margin:12px 0}
+  .pubky-post__init-btn{
+    background:var(--pp-accent);color:#fff;border:0;border-radius:10px;
+    padding:9px 18px;cursor:pointer;font-size:14px;font-weight:600;
+  }
+  .pubky-post__init-btn:hover{opacity:.92}
+  .pubky-post__init-btn:disabled{opacity:.6;cursor:wait}
+  .pubky-post__init-err{color:var(--pp-error-fg);font-size:13px;margin-top:8px}
   .pubky-post__reply-form .pubky-post__reply-cancel{
     background:transparent;color:var(--pp-muted);border:1px solid var(--pp-border);
   }
@@ -587,8 +596,14 @@ async function render(el, opts) {
   el.innerHTML = '<div class="pubky-post--loading">Loading post…</div>';
 
   try {
+    const postRes = await fetch(`${base}/post/${encodeURIComponent(author)}/${encodeURIComponent(post)}`);
+    if (postRes.status === 404) {
+      renderUninitialized(el, { author, post, base, useStaging, theme });
+      return null;
+    }
+    if (!postRes.ok) throw new Error('HTTP ' + postRes.status);
     const [postData, userData] = await Promise.all([
-      fetchJson(`${base}/post/${encodeURIComponent(author)}/${encodeURIComponent(post)}`),
+      postRes.json(),
       fetchJson(`${base}/user/${encodeURIComponent(author)}`).catch(() => null),
     ]);
     el.innerHTML = renderHtml(postData, userData, base, useStaging);
@@ -607,6 +622,68 @@ async function render(el, opts) {
     el.innerHTML = `<div class="pubky-post__error">Failed to load post: ${escapeHtml(err.message)}</div>`;
     throw err;
   }
+}
+
+function renderUninitialized(el, { author, post, base, useStaging, theme }) {
+  el.innerHTML = `
+    <div class="pubky-post__login" data-pubky-post-login></div>
+    <div class="pubky-post__init">
+      <p class="pubky-post__init-msg">This thread hasn't been initialized yet.</p>
+      <button type="button" class="pubky-post__init-btn" data-pubky-init-btn hidden>Initialize thread</button>
+      <div class="pubky-post__init-err" data-pubky-init-err></div>
+    </div>
+  `;
+  const loginEl = el.querySelector('[data-pubky-post-login]');
+  if (loginEl) startLogin(loginEl, { base });
+
+  const btn = el.querySelector('[data-pubky-init-btn]');
+  const errEl = el.querySelector('[data-pubky-init-err]');
+  const msgEl = el.querySelector('.pubky-post__init-msg');
+
+  const refresh = () => {
+    const me = authState.z32;
+    if (!me) {
+      btn.hidden = true;
+      msgEl.textContent = "This thread hasn't been initialized yet. Sign in to initialize it.";
+    } else if (me !== author) {
+      btn.hidden = true;
+      msgEl.textContent = "This thread hasn't been initialized yet. Only the page author can initialize it.";
+    } else {
+      btn.hidden = false;
+      msgEl.textContent = "This thread hasn't been initialized yet.";
+    }
+  };
+  refresh();
+  const onAuth = () => refresh();
+  window.addEventListener(AUTH_EVENT, onAuth);
+
+  btn.addEventListener('click', async () => {
+    if (!authState.session || authState.z32 !== author) return;
+    btn.disabled = true;
+    errEl.textContent = '';
+    try {
+      const postData = { content: window.location.href, kind: 'link' };
+      await authState.session.storage.putJson(`/pub/pubky.app/posts/${post}`, postData);
+      window.removeEventListener(AUTH_EVENT, onAuth);
+      btn.hidden = true;
+      errEl.textContent = '';
+      msgEl.textContent = 'Published! Waiting for Nexus to index…';
+      let indexed = false;
+      for (let i = 0; i < 10; i++) {
+        await new Promise(r => setTimeout(r, 1500));
+        const probe = await fetch(`${base}/post/${encodeURIComponent(author)}/${encodeURIComponent(post)}`);
+        if (probe.ok) { indexed = true; break; }
+      }
+      if (indexed) {
+        render(el, { author, post, useStaging, baseUrl: base, theme }).catch(() => {});
+      } else {
+        msgEl.textContent = 'Published, but Nexus has not indexed it yet. Refresh in a moment.';
+      }
+    } catch (err) {
+      btn.disabled = false;
+      errEl.textContent = err.message || String(err);
+    }
+  });
 }
 
 const fetchUserDetails = (base, z32) => fetchJson(`${base}/user/${encodeURIComponent(z32)}`).catch(() => null);

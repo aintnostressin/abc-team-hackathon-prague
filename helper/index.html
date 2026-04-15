@@ -392,13 +392,7 @@ async function showWizard(pubky, session) {
       const tsMicros = BigInt(Date.now()) * 1000n;
       const postId = postIdFromTimestamp(tsMicros);
       const postPath = `/pub/pubky.app/posts/${postId}`;
-      const postData = {
-        content: url,
-        kind: 'link',
-        parent: null,
-        embed: null,
-        attachments: null,
-      };
+      const postData = { content: url, kind: 'link' };
 
       await session.storage.putJson(postPath, postData);
 
