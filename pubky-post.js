@@ -144,14 +144,19 @@ const POST_CSS = `
     width:auto;padding:7px 14px;font-size:13px;border-radius:8px;
   }
   .pubky-post__login .pubky-login__user{
-    display:flex;align-items:center;gap:8px;flex-wrap:nowrap;
-    padding:8px 10px;border:1px solid var(--pp-border);
-    border-radius:10px;background:rgba(99,102,241,.04);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:6px 10px;border:1px solid var(--pp-border);
+    border-radius:8px;background:rgba(99,102,241,.04);width:100%;box-sizing:border-box;
   }
-  .pubky-post__login .pubky-login__avatar{width:28px;height:28px;font-size:11px}
-  .pubky-post__login .pubky-login__text{font-size:12px;color:var(--pp-muted)}
-  .pubky-post__login .pubky-login__name-link{color:var(--pp-accent);font-weight:600}
-  .pubky-post__login .pubky-login__name-link:hover{text-decoration:underline}
+  .pubky-post__login .pubky-login__user-left{
+    display:flex;align-items:center;gap:8px;min-width:0;
+  }
+  .pubky-post__login .pubky-login__avatar{width:24px;height:24px;font-size:10px;flex-shrink:0}
+  .pubky-post__login .pubky-login__name-link{
+    color:var(--pp-fg);font-weight:600;font-size:13px;text-decoration:none;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .pubky-post__login .pubky-login__name-link:hover{text-decoration:underline;color:var(--pp-accent)}
   .pubky-post__login .pubky-login__logout{
     background:transparent;color:var(--pp-muted);border:0;
     font-size:11px;font-weight:500;padding:0;width:auto;
@@ -241,15 +246,16 @@ const LOGIN_CSS = `
   .pubky-login a{display:block;text-align:center;margin-top:8px;color:#6366f1;
     font-size:13px;text-decoration:none;word-break:break-all}
   .pubky-login__status{font-size:13px;color:#64748b;margin-top:8px;text-align:center}
-  .pubky-login__user{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+  .pubky-login__user{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pubky-login__user-left{display:flex;align-items:center;gap:8px;min-width:0}
   .pubky-login__avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;
     background:linear-gradient(135deg,#6366f1,#8b5cf6);object-fit:cover;
     display:flex;align-items:center;justify-content:center;color:#fff;
     font-weight:600;font-size:12px;overflow:hidden}
   .pubky-login__avatar img{width:100%;height:100%;object-fit:cover}
-  .pubky-login__text{font-size:13px;color:#64748b;white-space:nowrap}
-  .pubky-login__name-link{color:#6366f1;text-decoration:none;font-weight:600;white-space:nowrap}
-  .pubky-login__name-link:hover{text-decoration:underline}
+  .pubky-login__name-link{color:#0f172a;text-decoration:none;font-weight:600;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pubky-login__name-link:hover{text-decoration:underline;color:#6366f1}
   .pubky-login__logout{margin-left:auto;background:none;border:0;
     color:#64748b;font-size:12px;cursor:pointer;text-decoration:underline;
     flex-shrink:0;padding:0;width:auto;white-space:nowrap}
@@ -683,10 +689,12 @@ function renderSignedIn(el, base, z32, user) {
 
   el.innerHTML = `
     <div class="pubky-login__user">
-      <div class="pubky-login__avatar">
-        <img src="${escapeHtml(avatarSrc)}" alt="" onerror="this.remove()">${fallback}
+      <div class="pubky-login__user-left">
+        <div class="pubky-login__avatar">
+          <img src="${escapeHtml(avatarSrc)}" alt="" onerror="this.remove()">${fallback}
+        </div>
+        <a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="pubky-login__name-link">${escapeHtml(name)}</a>
       </div>
-      <span class="pubky-login__text">You are logged in as <a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="pubky-login__name-link">${escapeHtml(name)}</a>.</span>
       <button class="pubky-login__logout" type="button">Sign out</button>
     </div>
   `;
