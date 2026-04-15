@@ -11,6 +11,19 @@ const LOGIN_CAPABILITIES = '/pub/pubky.app/:rw';
 
 const THEMES = ['auto', 'light', 'dark'];
 
+const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+function postIdFromTimestamp(tsMicros) {
+  const v = BigInt(tsMicros);
+  if (v < 0n || v >= (1n << 63n)) throw new Error('Timestamp out of i64 range');
+  const shifted = v << 1n;
+  let out = '';
+  for (let i = 12; i >= 0; i--) {
+    out += CROCKFORD_ALPHABET[Number((shifted >> BigInt(i * 5)) & 0x1fn)];
+  }
+  return out;
+}
+
 const POST_CSS = `
   .pubky-post{
     --pp-bg:#ffffff;
@@ -689,12 +702,18 @@ export async function startLogin(el, opts) {
 
 function autoRender(root) {
   const scope = root || document;
-  scope.querySelectorAll('[data-pubky-author][data-pubky-post]').forEach(n => {
+  scope.querySelectorAll('[data-pubky-author]').forEach(n => {
     if (n.dataset.pubkyRendered) return;
+    let post = n.dataset.pubkyPost;
+    if (!post && n.dataset.pubkyTs) {
+      try { post = postIdFromTimestamp(n.dataset.pubkyTs); }
+      catch { return; }
+    }
+    if (!n.dataset.pubkyAuthor || !post) return;
     n.dataset.pubkyRendered = '1';
     render(n, {
       author: n.dataset.pubkyAuthor,
-      post: n.dataset.pubkyPost,
+      post,
       baseUrl: n.dataset.pubkyBase,
       theme: n.dataset.pubkyTheme,
       useStaging: n.dataset.pubkyUseStaging === 'true',

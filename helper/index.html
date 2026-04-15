@@ -253,12 +253,24 @@
 <script type="module">
 import { Pubky, AuthFlowKind } from 'https://esm.sh/@synonymdev/pubky@0.7.0';
 import QRCode from 'https://esm.sh/qrcode@1.5.4';
-import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://esm.sh/pubky-app-specs@0.4.4';
 
 const $ = id => document.getElementById(id);
 const SESSION_KEY = 'pubky-session';
 const NEXUS_ORIGIN = 'https://nexus.pubky.app';
 const AUTH_CAPS = '/pub/pubky.app/:rw';
+
+const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+function postIdFromTimestamp(tsMicros) {
+  const v = BigInt(tsMicros);
+  if (v < 0n || v >= (1n << 63n)) throw new Error('Timestamp out of i64 range');
+  const shifted = v << 1n;
+  let out = '';
+  for (let i = 12; i >= 0; i--) {
+    out += CROCKFORD_ALPHABET[Number((shifted >> BigInt(i * 5)) & 0x1fn)];
+  }
+  return out;
+}
 
 const loginView = $('login-view'), wizardView = $('wizard-view');
 const statusEl = $('status'), errorBox = $('error-box');
@@ -330,7 +342,7 @@ async function showWizard(pubky, session) {
   const nextBtn = $('next-btn'), step2NextBtn = $('step2-next-btn');
   const step2Loading = $('step2-loading'), step2Result = $('step2-result'), step2Error = $('step2-error');
   let currentSnippet = '';
-  let pendingPostId = null;
+  let pendingTs = null;
 
   $('copy-btn').addEventListener('click', async () => {
     if (!currentSnippet) return;
@@ -343,13 +355,13 @@ async function showWizard(pubky, session) {
   });
 
   step2NextBtn.addEventListener('click', () => {
-    if (!pendingPostId) return;
+    if (!pendingTs) return;
     goToStep(3);
 
     currentSnippet =
 `<div
   data-pubky-author="${pkZ32}"
-  data-pubky-post="${pendingPostId}"
+  data-pubky-ts="${pendingTs}"
   data-pubky-theme="light">
 </div>
 
@@ -377,15 +389,20 @@ async function showWizard(pubky, session) {
     step2Error.style.display = 'none';
 
     try {
-      const specsBuilder = new PubkySpecsBuilder(pkZ32);
-      const { post, meta } = specsBuilder.createPost(url, PubkyAppPostKind.Link, null, null, null);
-      const postId = meta.id;
+      const tsMicros = BigInt(Date.now()) * 1000n;
+      const postId = postIdFromTimestamp(tsMicros);
       const postPath = `/pub/pubky.app/posts/${postId}`;
-      const postData = post.toJson();
+      const postData = {
+        content: url,
+        kind: 'link',
+        parent: null,
+        embed: null,
+        attachments: null,
+      };
 
       await session.storage.putJson(postPath, postData);
 
-      pendingPostId = postId;
+      pendingTs = tsMicros.toString();
       const fullPath = `pubky://${pkStr}${postPath}`;
       step2Loading.style.display = 'none';
       $('step2-path').textContent = fullPath;
