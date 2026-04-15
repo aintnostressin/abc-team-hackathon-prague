@@ -28,7 +28,7 @@
     h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
     .subtitle { font-size: 14px; color: #64748b; margin-bottom: 28px; }
 
-    /* ── Login view (Step 1) ── */
+    /* ── Login view ── */
     #qr-wrap {
       display: inline-block;
       padding: 12px;
@@ -40,8 +40,8 @@
     #qr-wrap canvas { display: block; }
     #status { font-size: 13px; color: #64748b; }
 
-    /* ── Wizard view ── */
-    #wizard-view, #step-2, #step-3 { display: none; }
+    /* ── Post-login view ── */
+    #wizard-view { display: none; }
     button {
       display: inline-flex;
       align-items: center;
@@ -71,51 +71,14 @@
       text-align: left;
     }
 
-    /* ── Wizard ── */
-    .wizard-progress {
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 28px;
-    }
-    .wizard-dot {
-      width: 32px; height: 32px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 600;
-      border: 2px solid #cbd5e1; color: #cbd5e1; background: #fff;
-      transition: all .3s;
-      position: relative; flex-shrink: 0;
-    }
-
-    /* Done: solid fill + checkmark replaces number */
-    .wizard-dot.done {
-      border-color: #6366f1; background: #6366f1; color: transparent;
-    }
-    .wizard-dot.done::after {
-      content: '✓';
-      position: absolute;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    /* Current: white fill, bold purple border + outer glow ring */
-    .wizard-dot.current {
-      border-color: #6366f1; color: #6366f1; background: #fff;
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18);
-    }
-
-    .wizard-line {
-      flex: 1; max-width: 48px; height: 3px;
-      background: #e2e8f0; border-radius: 2px;
-      transition: background .3s;
-    }
-    .wizard-line.active { background: #6366f1; }
-
-    .wizard-panel { text-align: center; }
-
     .wizard-user {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
       padding: 10px 14px; border-radius: 10px; background: #f8fafc;
       margin-bottom: 24px; text-align: left;
+    }
+    .wizard-user__identity {
+      display: flex; align-items: center; gap: 10px;
+      min-width: 0; flex: 1;
     }
     .wizard-user__avatar {
       width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
@@ -136,15 +99,6 @@
       font-size: 11px; color: #94a3b8; font-family: ui-monospace, monospace;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px;
     }
-
-    .btn-primary {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 10px 24px; border-radius: 10px; border: none;
-      background: #6366f1; color: #fff; font-size: 14px; font-weight: 600;
-      cursor: pointer; transition: background .15s;
-    }
-    .btn-primary:hover { background: #4f46e5; }
-    .btn-primary:disabled { opacity: .6; cursor: wait; }
 
     .snippet-wrap {
       position: relative; text-align: left; background: #0f172a;
@@ -168,8 +122,9 @@
     }
 
     .signout-link {
-      margin-top: 20px; background: none; border: none; color: #94a3b8;
+      margin-top: 0; padding: 0; background: none; border: none; color: #94a3b8;
       font-size: 13px; cursor: pointer; text-decoration: underline;
+      flex-shrink: 0;
     }
     .signout-link:hover { color: #64748b; }
 
@@ -223,42 +178,18 @@
       margin-bottom: 12px;
     }
 
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      margin-top: 16px;
-    }
-
-    /* ── Step 3 success message ── */
-    .success-icon {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 20px;
-      color: #fff;
-      font-size: 32px;
+    .snippet-note {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 12px;
     }
   </style>
 </head>
 <body>
 <div class="card">
 
-  <!-- Step 1: Login view (QR code) -->
+  <!-- Login view (QR code) -->
   <div id="step-1">
-    <!-- Step progress -->
-    <div class="wizard-progress">
-      <span class="wizard-dot current" data-step="1">1</span>
-      <span class="wizard-line" data-line="1"></span>
-      <span class="wizard-dot" data-step="2">2</span>
-      <span class="wizard-line" data-line="2"></span>
-      <span class="wizard-dot" data-step="3">3</span>
-    </div>
-
     <h1>Sign in with Pubky</h1>
     <p class="subtitle">Scan with <strong>Pubky Ring</strong> or any Pubky-compatible signer</p>
     <div id="qr-wrap"><canvas id="qr-canvas"></canvas></div>
@@ -266,22 +197,13 @@
     <div id="error-box"></div>
   </div>
 
-  <!-- Wizard view (shown after login) -->
+  <!-- Post-login view -->
   <div id="wizard-view">
     <!-- User info -->
     <div id="wizard-user" class="wizard-user"></div>
 
-    <!-- Step progress -->
-    <div class="wizard-progress">
-      <span class="wizard-dot done" data-step="1">1</span>
-      <span class="wizard-line active" data-line="1"></span>
-      <span class="wizard-dot current" data-step="2">2</span>
-      <span class="wizard-line" data-line="2"></span>
-      <span class="wizard-dot" data-step="3">3</span>
-    </div>
-
-    <!-- Step 2: Generate snippet -->
-    <div id="step-2" class="wizard-panel">
+    <!-- Widget snippet -->
+    <div id="snippet-panel">
       <h2>Widget Snippet</h2>
       <p class="subtitle">Configure and copy the widget snippet to embed in your blog post</p>
 
@@ -305,20 +227,8 @@
         <button id="copy-btn" class="copy-btn" type="button">Copy</button>
       </div>
       <div id="copy-status" class="copy-status"></div>
-
-      <div class="btn-row">
-        <button id="step2-next-btn" class="btn-primary" type="button">Next →</button>
-      </div>
+      <p class="snippet-note">Publish your blog post and view it, to initialize the comment widget.</p>
     </div>
-
-    <!-- Step 3: Done -->
-    <div id="step-3" class="wizard-panel">
-      <div class="success-icon">✓</div>
-      <h2>Widget is Ready</h2>
-      <p class="subtitle">Publish your blog post and view it, to initialize the comment widget.</p>
-    </div>
-
-    <button id="wizard-signout" class="signout-link" type="button">Sign out</button>
   </div>
 
 </div>
@@ -330,9 +240,22 @@ import QRCode from 'https://esm.sh/qrcode@1.5.4';
 const $ = id => document.getElementById(id);
 const NEXUS_ORIGIN = 'https://nexus.pubky.app';
 const AUTH_CAPS = '/pub/pubky.app/:rw';
+const HTML_ESCAPE_MAP = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+};
 
-const step1View = $('step-1'), wizardView = $('wizard-view');
+const step1View = $('step-1'), wizardView = $('wizard-view'), userPanel = $('wizard-user');
 const statusEl = $('status'), errorBox = $('error-box');
+
+userPanel.addEventListener('click', event => {
+  if (event.target.id === 'wizard-signout') {
+    location.reload();
+  }
+});
 
 function showError(el, msg) {
   el.style.display = 'block';
@@ -347,39 +270,30 @@ function shortKey(pk) {
   return !pk || pk.length < 14 ? (pk || '') : pk.slice(0, 14) + '…' + pk.slice(-6);
 }
 
-function goToStep(step) {
-  // Update wizard view progress dots
-  const wizardDots = wizardView.querySelectorAll('.wizard-dot');
-  const wizardLines = wizardView.querySelectorAll('.wizard-line');
-
-  wizardDots.forEach(dot => {
-    const s = parseInt(dot.dataset.step);
-    dot.classList.toggle('done', s < step);
-    dot.classList.toggle('current', s === step);
-  });
-
-  wizardLines.forEach(line => {
-    const l = parseInt(line.dataset.line);
-    line.classList.toggle('active', l < step);
-  });
-
-  // Show/hide step panels
-  $('step-2').style.display = step === 2 ? 'block' : 'none';
-  $('step-3').style.display = step === 3 ? 'block' : 'none';
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => HTML_ESCAPE_MAP[char] || char);
 }
 
 function renderUserInfo(pkStr, pkZ32, profile) {
   const name = profile?.name || shortKey(pkStr);
   const avatarSrc = `${NEXUS_ORIGIN}/static/avatar/${encodeURIComponent(pkZ32)}`;
-  const fb = initials(profile?.name);
+  const fb = escapeHtml(initials(profile?.name));
+  const safeName = escapeHtml(name);
+  const safePkStr = escapeHtml(pkStr);
+  const safeShortKey = escapeHtml(shortKey(pkStr));
+  const safeAvatarSrc = escapeHtml(avatarSrc);
+  const safeAvatarAlt = escapeHtml(profile?.name ? `${profile.name} avatar` : 'User avatar');
   $('wizard-user').innerHTML = `
-    <div class="wizard-user__avatar">
-      <img src="${avatarSrc}" alt="" onerror="this.remove()">${fb}
+    <div class="wizard-user__identity">
+      <div class="wizard-user__avatar">
+        <img src="${safeAvatarSrc}" alt="${safeAvatarAlt}" onerror="this.remove()">${fb}
+      </div>
+      <div class="wizard-user__meta">
+        <div class="wizard-user__name">${safeName}</div>
+        <div class="wizard-user__handle" title="${safePkStr}">${safeShortKey}</div>
+      </div>
     </div>
-    <div class="wizard-user__meta">
-      <div class="wizard-user__name">${name}</div>
-      <div class="wizard-user__handle" title="${pkStr}">${shortKey(pkStr)}</div>
-    </div>
+    <button id="wizard-signout" class="signout-link" type="button">Sign out</button>
   `;
 }
 
@@ -428,8 +342,8 @@ async function showWizard(pubky, session) {
     if (profile) renderUserInfo(pkStr, pkZ32, profile);
   } catch { /* ignore */ }
 
-  // Show step 2
-  goToStep(2);
+  // Show snippet panel
+  $('snippet-panel').style.display = 'block';
 
   // Generate initial snippet
   let currentSnippet = updateSnippet(pkZ32, tsMicros);
@@ -455,15 +369,6 @@ async function showWizard(pubky, session) {
     }
   });
 
-  // Next button → Step 3
-  $('step2-next-btn').addEventListener('click', () => {
-    goToStep(3);
-  });
-
-  // Sign out → reload page (will show QR again since no session caching)
-  $('wizard-signout').addEventListener('click', () => {
-    location.reload();
-  });
 }
 
 async function main() {
