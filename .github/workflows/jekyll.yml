@@ -53,6 +53,9 @@ jobs:
       - name: Copy helper folder
         run: cp -r ../helper ../_site_final/helper
 
+      - name: Copy static HTML folder
+        run: cp -r ../static_html ../_site_final/static_html
+
       - name: Copy pubky-post.js
         run: cp ../pubky-post.js ../_site_final/pubky-post.js
 
