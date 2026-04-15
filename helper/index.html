@@ -20,7 +20,7 @@
       border-radius: 20px;
       box-shadow: 0 2px 4px rgba(15,23,42,.06), 0 16px 40px -16px rgba(15,23,42,.14);
       padding: 40px 32px;
-      max-width: 520px;
+      max-width: 560px;
       width: 100%;
       text-align: center;
     }
@@ -28,7 +28,7 @@
     h2 { font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
     .subtitle { font-size: 14px; color: #64748b; margin-bottom: 28px; }
 
-    /* ── Login view ── */
+    /* ── Login view (Step 1) ── */
     #qr-wrap {
       display: inline-block;
       padding: 12px;
@@ -41,7 +41,7 @@
     #status { font-size: 13px; color: #64748b; }
 
     /* ── Wizard view ── */
-    #wizard-view, #step-2, #step-3, #step2-result { display: none; }
+    #wizard-view, #step-2, #step-3 { display: none; }
     button {
       display: inline-flex;
       align-items: center;
@@ -70,17 +70,6 @@
       margin-top: 16px;
       text-align: left;
     }
-
-    /* ── Spinner ── */
-    .spinner {
-      width: 20px; height: 20px;
-      border: 2px solid #e2e8f0;
-      border-top-color: #6366f1;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
-      margin: 0 auto 16px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Wizard ── */
     .wizard-progress {
@@ -126,18 +115,6 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px;
     }
 
-    .url-input {
-      width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0;
-      border-radius: 10px; font-size: 14px; outline: none;
-      transition: border-color .15s; margin-bottom: 8px;
-    }
-    .url-input:focus { border-color: #6366f1; }
-    .url-input.invalid { border-color: #f87171; }
-
-    .field-error {
-      display: none; font-size: 13px; color: #b91c1c; text-align: left; margin-bottom: 12px;
-    }
-
     .btn-primary {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 10px 24px; border-radius: 10px; border: none;
@@ -174,14 +151,92 @@
     }
     .signout-link:hover { color: #64748b; }
 
-    .step2-spinner { margin: 16px auto; }
+    /* ── Options form ── */
+    .options-form {
+      text-align: left;
+      margin-bottom: 20px;
+    }
+    .options-form label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 4px;
+    }
+    .options-form select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #0f172a;
+      background: #fff;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .options-form select:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+    .options-form .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .options-form .checkbox-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+    .options-form .checkbox-row label {
+      margin-bottom: 0;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .options-form .hint {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: -8px;
+      margin-bottom: 12px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 16px;
+    }
+
+    /* ── Step 3 success message ── */
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      color: #fff;
+      font-size: 32px;
+    }
   </style>
 </head>
 <body>
 <div class="card">
 
-  <!-- Login view (default) -->
-  <div id="login-view">
+  <!-- Step 1: Login view (QR code) -->
+  <div id="step-1">
+    <!-- Step progress -->
+    <div class="wizard-progress">
+      <span class="wizard-dot current" data-step="1">1</span>
+      <span class="wizard-line" data-line="1"></span>
+      <span class="wizard-dot" data-step="2">2</span>
+      <span class="wizard-line" data-line="2"></span>
+      <span class="wizard-dot" data-step="3">3</span>
+    </div>
+
     <h1>Sign in with Pubky</h1>
     <p class="subtitle">Scan with <strong>Pubky Ring</strong> or any Pubky-compatible signer</p>
     <div id="qr-wrap"><canvas id="qr-canvas"></canvas></div>
@@ -196,53 +251,49 @@
 
     <!-- Step progress -->
     <div class="wizard-progress">
-      <span class="wizard-dot current" data-step="1">1</span>
-      <span class="wizard-line" data-line="1"></span>
-      <span class="wizard-dot" data-step="2">2</span>
+      <span class="wizard-dot done" data-step="1">1</span>
+      <span class="wizard-line active" data-line="1"></span>
+      <span class="wizard-dot current" data-step="2">2</span>
       <span class="wizard-line" data-line="2"></span>
       <span class="wizard-dot" data-step="3">3</span>
     </div>
 
-    <!-- Step 1: Enter URL -->
-    <div id="step-1" class="wizard-panel">
-      <h2>Enter the URL of the blog post</h2>
-      <p class="subtitle">Provide the URL of the blog post you want to enable comments on</p>
-      <input type="url" id="blog-url" class="url-input" placeholder="https://example.com/my-blog-post" />
-      <div id="url-error" class="field-error"></div>
-      <button id="next-btn" class="btn-primary" type="button">Next →</button>
-    </div>
-
-    <!-- Step 2: Creating post (automatic) -->
+    <!-- Step 2: Generate snippet -->
     <div id="step-2" class="wizard-panel">
-      <h2>Creating Pubky Post</h2>
-      <div id="step2-loading">
-        <div class="spinner step2-spinner"></div>
-        <p id="step2-status" class="subtitle">Publishing your post to the Pubky network…</p>
-      </div>
-      <div id="step2-result">
-        <p class="subtitle" style="margin-bottom:12px">Post created successfully!</p>
-        <div style="text-align:left;margin-bottom:12px">
-          <label style="font-size:13px;font-weight:600;color:#0f172a;display:block;margin-bottom:4px">Full path</label>
-          <div id="step2-path" style="font-size:13px;color:#64748b;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;word-break:break-all"></div>
-        </div>
-        <div style="text-align:left;margin-bottom:16px">
-          <label style="font-size:13px;font-weight:600;color:#0f172a;display:block;margin-bottom:4px">Pubky Post (JSON)</label>
-          <pre id="step2-json" style="font-size:13px;color:#e2e8f0;background:#0f172a;border-radius:8px;padding:14px 16px;margin:0;white-space:pre-wrap;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.6"></pre>
-        </div>
-        <button id="step2-next-btn" class="btn-primary" type="button">Next →</button>
-      </div>
-      <div id="step2-error" class="field-error"></div>
-    </div>
+      <h2>Widget Snippet</h2>
+      <p class="subtitle">Configure and copy the widget snippet to embed in your blog post</p>
 
-    <!-- Step 3: Code snippet -->
-    <div id="step-3" class="wizard-panel">
-      <h2>Add This to Your Page</h2>
-      <p class="subtitle">Paste this snippet into your blog post's HTML to enable the Pubky comment widget</p>
+      <div class="options-form">
+        <label for="theme-select">Theme</label>
+        <select id="theme-select">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="auto">Auto (system preference)</option>
+        </select>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="use-staging" />
+          <label for="use-staging">Use staging environment</label>
+        </div>
+        <p class="hint">Enable this for testing with staging Pubky servers</p>
+      </div>
+
       <div class="snippet-wrap">
         <pre id="code-snippet"></pre>
         <button id="copy-btn" class="copy-btn" type="button">Copy</button>
       </div>
       <div id="copy-status" class="copy-status"></div>
+
+      <div class="btn-row">
+        <button id="step2-next-btn" class="btn-primary" type="button">Next →</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Done -->
+    <div id="step-3" class="wizard-panel">
+      <div class="success-icon">✓</div>
+      <h2>Widget is Ready</h2>
+      <p class="subtitle">Publish your blog post and view it, to initialize the comment widget.</p>
     </div>
 
     <button id="wizard-signout" class="signout-link" type="button">Sign out</button>
@@ -255,24 +306,10 @@ import { Pubky, AuthFlowKind } from 'https://esm.sh/@synonymdev/pubky@0.7.0';
 import QRCode from 'https://esm.sh/qrcode@1.5.4';
 
 const $ = id => document.getElementById(id);
-const SESSION_KEY = 'pubky-session';
 const NEXUS_ORIGIN = 'https://nexus.pubky.app';
 const AUTH_CAPS = '/pub/pubky.app/:rw';
 
-const CROCKFORD_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
-
-function postIdFromTimestamp(tsMicros) {
-  const v = BigInt(tsMicros);
-  if (v < 0n || v >= (1n << 63n)) throw new Error('Timestamp out of i64 range');
-  const shifted = v << 1n;
-  let out = '';
-  for (let i = 12; i >= 0; i--) {
-    out += CROCKFORD_ALPHABET[Number((shifted >> BigInt(i * 5)) & 0x1fn)];
-  }
-  return out;
-}
-
-const loginView = $('login-view'), wizardView = $('wizard-view');
+const step1View = $('step-1'), wizardView = $('wizard-view');
 const statusEl = $('status'), errorBox = $('error-box');
 
 function showError(el, msg) {
@@ -288,21 +325,25 @@ function shortKey(pk) {
   return !pk || pk.length < 14 ? (pk || '') : pk.slice(0, 14) + '…' + pk.slice(-6);
 }
 
-function isValidUrl(str) {
-  try { return ['http:', 'https:'].includes(new URL(str).protocol); }
-  catch { return false; }
-}
-
 function goToStep(step) {
-  [1, 2, 3].forEach(s => {
-    $(`step-${s}`).style.display = s === step ? 'block' : 'none';
-    const dot = document.querySelector(`.wizard-dot[data-step="${s}"]`);
+  // Update wizard view progress dots
+  const wizardDots = wizardView.querySelectorAll('.wizard-dot');
+  const wizardLines = wizardView.querySelectorAll('.wizard-line');
+
+  wizardDots.forEach(dot => {
+    const s = parseInt(dot.dataset.step);
     dot.classList.toggle('done', s < step);
     dot.classList.toggle('current', s === step);
   });
-  [1, 2].forEach(l => {
-    document.querySelector(`.wizard-line[data-line="${l}"]`).classList.toggle('active', l < step);
+
+  wizardLines.forEach(line => {
+    const l = parseInt(line.dataset.line);
+    line.classList.toggle('active', l < step);
   });
+
+  // Show/hide step panels
+  $('step-2').style.display = step === 2 ? 'block' : 'none';
+  $('step-3').style.display = step === 3 ? 'block' : 'none';
 }
 
 function renderUserInfo(pkStr, pkZ32, profile) {
@@ -320,13 +361,41 @@ function renderUserInfo(pkStr, pkZ32, profile) {
   `;
 }
 
+function generateSnippet(pkZ32, tsMicros, theme, useStaging) {
+  let attrs = `  data-pubky-author="${pkZ32}"
+  data-pubky-ts="${tsMicros}"
+  data-pubky-theme="${theme}"`;
+
+  if (useStaging) {
+    attrs += `
+  data-pubky-use-staging="true"`;
+  }
+
+  return `<div
+${attrs}>
+</div>
+
+<script type="module" src="/pubky-post.js"><\/script>`;
+}
+
+function updateSnippet(pkZ32, tsMicros) {
+  const theme = $('theme-select').value;
+  const useStaging = $('use-staging').checked;
+  const snippet = generateSnippet(pkZ32, tsMicros, theme, useStaging);
+  $('code-snippet').textContent = snippet;
+  return snippet;
+}
+
 async function showWizard(pubky, session) {
-  loginView.style.display  = 'none';
+  step1View.style.display  = 'none';
   wizardView.style.display = 'block';
 
   const pk    = session.info.publicKey;
   const pkStr = pk.toString();
   const pkZ32 = pk.z32();
+
+  // Generate timestamp in microseconds
+  const tsMicros = (BigInt(Date.now()) * 1000n).toString();
 
   // Render user info (without profile first, then update)
   renderUserInfo(pkStr, pkZ32, null);
@@ -337,13 +406,23 @@ async function showWizard(pubky, session) {
     if (profile) renderUserInfo(pkStr, pkZ32, profile);
   } catch { /* ignore */ }
 
-  // Step 1 → Step 2 → Step 3
-  const urlInput = $('blog-url'), urlError = $('url-error');
-  const nextBtn = $('next-btn'), step2NextBtn = $('step2-next-btn');
-  const step2Loading = $('step2-loading'), step2Result = $('step2-result'), step2Error = $('step2-error');
-  let currentSnippet = '';
-  let pendingTs = null;
+  // Show step 2
+  goToStep(2);
 
+  // Generate initial snippet
+  let currentSnippet = updateSnippet(pkZ32, tsMicros);
+
+  // Update snippet when options change
+  $('theme-select').addEventListener('change', () => {
+    currentSnippet = updateSnippet(pkZ32, tsMicros);
+    $('copy-status').textContent = '';
+  });
+  $('use-staging').addEventListener('change', () => {
+    currentSnippet = updateSnippet(pkZ32, tsMicros);
+    $('copy-status').textContent = '';
+  });
+
+  // Copy button
   $('copy-btn').addEventListener('click', async () => {
     if (!currentSnippet) return;
     try {
@@ -354,69 +433,13 @@ async function showWizard(pubky, session) {
     }
   });
 
-  step2NextBtn.addEventListener('click', () => {
-    if (!pendingTs) return;
+  // Next button → Step 3
+  $('step2-next-btn').addEventListener('click', () => {
     goToStep(3);
-
-    currentSnippet =
-`<div
-  data-pubky-author="${pkZ32}"
-  data-pubky-ts="${pendingTs}"
-  data-pubky-theme="light">
-</div>
-
-<script type="module" src="/pubky-post.js"><\/script>`;
-
-    $('code-snippet').textContent = currentSnippet;
   });
 
-  nextBtn.addEventListener('click', async () => {
-    const url = urlInput.value.trim();
-
-    if (!url || !isValidUrl(url)) {
-      urlError.textContent = url ? 'Please enter a valid URL (e.g., https://example.com/blog-post).' : 'Please enter a URL.';
-      urlError.style.display = 'block';
-      urlInput.classList.add('invalid');
-      return;
-    }
-    urlError.style.display = 'none';
-    urlInput.classList.remove('invalid');
-
-    // Step 2: Create post
-    goToStep(2);
-    step2Loading.style.display = 'block';
-    step2Result.style.display = 'none';
-    step2Error.style.display = 'none';
-
-    try {
-      const tsMicros = BigInt(Date.now()) * 1000n;
-      const postId = postIdFromTimestamp(tsMicros);
-      const postPath = `/pub/pubky.app/posts/${postId}`;
-      const postData = {
-        content: url,
-        kind: 'link',
-        parent: null,
-        embed: null,
-        attachments: null,
-      };
-
-      await session.storage.putJson(postPath, postData);
-
-      pendingTs = tsMicros.toString();
-      const fullPath = `pubky://${pkStr}${postPath}`;
-      step2Loading.style.display = 'none';
-      $('step2-path').textContent = fullPath;
-      $('step2-json').textContent = JSON.stringify(postData, null, 2);
-      step2Result.style.display = 'block';
-    } catch (err) {
-      step2Loading.style.display = 'none';
-      showError(step2Error, err.message);
-    }
-  });
-
-  // Sign out
+  // Sign out → reload page (will show QR again since no session caching)
   $('wizard-signout').addEventListener('click', () => {
-    localStorage.removeItem(SESSION_KEY);
     location.reload();
   });
 }
@@ -424,19 +447,7 @@ async function showWizard(pubky, session) {
 async function main() {
   const pubky = new Pubky();
 
-  // Try to restore an existing session
-  const saved = localStorage.getItem(SESSION_KEY);
-  if (saved) {
-    try {
-      const session = await pubky.restoreSession(saved);
-      await showWizard(pubky, session);
-      return;
-    } catch {
-      localStorage.removeItem(SESSION_KEY);
-    }
-  }
-
-  // Start QR auth flow with read/write capabilities
+  // Always start fresh QR auth flow (no session caching)
   let flow;
   try {
     flow = pubky.startAuthFlow(AUTH_CAPS, AuthFlowKind.signin());
@@ -461,7 +472,7 @@ async function main() {
   // Wait for user to approve
   try {
     const session = await flow.awaitApproval();
-    localStorage.setItem(SESSION_KEY, session.export());
+    // Do NOT store session - page refresh will ask for QR login again
     await showWizard(pubky, session);
   } catch (e) {
     showError(errorBox, 'Auth failed: ' + e.message);
