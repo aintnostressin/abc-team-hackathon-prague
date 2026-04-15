@@ -166,11 +166,14 @@ const POST_CSS = `
   .pubky-post__login .pubky-login__logout:hover{color:var(--pp-fg)}
   .pubky-post__reply-actions{margin-top:8px}
   .pubky-post__reply-btn{
-    background:none;border:1px solid var(--pp-border);border-radius:8px;
-    color:var(--pp-muted);font-size:12px;font-weight:600;padding:4px 10px;
-    cursor:pointer;transition:background .15s,color .15s,border-color .15s;
+    background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.25);
+    border-radius:7px;color:var(--pp-accent);
+    font-size:12px;font-weight:600;padding:5px 10px;
+    display:inline-flex;align-items:center;gap:5px;
+    cursor:pointer;transition:background .15s,border-color .15s,transform .05s;
   }
-  .pubky-post__reply-btn:hover{background:rgba(99,102,241,.08);color:var(--pp-accent);border-color:var(--pp-accent)}
+  .pubky-post__reply-btn:hover{background:rgba(99,102,241,.18);border-color:rgba(99,102,241,.4)}
+  .pubky-post__reply-btn:active{transform:translateY(1px)}
   .pubky-post__reply-form{
     display:none;flex-direction:column;gap:8px;margin-top:8px;
     padding:10px;border:1px solid var(--pp-border);border-radius:10px;
@@ -372,7 +375,7 @@ function replyActionsHtml(author, postId) {
          data-pubky-parent-author="${escapeHtml(author || '')}"
          data-pubky-parent-post="${escapeHtml(postId || '')}"
          hidden>
-      <button type="button" class="pubky-post__reply-btn" data-pubky-reply-toggle>Reply</button>
+      <button type="button" class="pubky-post__reply-btn" data-pubky-reply-toggle><span aria-hidden="true">↩</span> Reply</button>
       <form class="pubky-post__reply-form" data-pubky-reply-form>
         <textarea data-pubky-reply-text placeholder="Write a reply…" maxlength="1000"></textarea>
         <div class="pubky-post__reply-form-row">
