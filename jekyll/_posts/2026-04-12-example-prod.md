@@ -21,4 +21,4 @@ Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Duis moll
   data-pubky-use-staging="false">
 </div>
 
-<script type="module" src="/abc-team-hackathon-prague/pubky-post.js"></script>
+<script type="module" src="/abc-team-hackathon-prague/abc.js"></script>
