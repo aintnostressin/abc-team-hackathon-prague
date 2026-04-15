@@ -379,7 +379,7 @@ function replyActionsHtml(author, postId) {
   `;
 }
 
-function renderHtml(post, _user, base, useStaging) {
+function renderHtml(post, base, useStaging) {
   const d = post.details || {};
   return `
     <div class="pubky-post__login" data-pubky-post-login></div>
@@ -592,7 +592,7 @@ async function render(el, opts) {
     }
     if (!postRes.ok) throw new Error('HTTP ' + postRes.status);
     const postData = await postRes.json();
-    el.innerHTML = renderHtml(postData, null, base, useStaging);
+    el.innerHTML = renderHtml(postData, base, useStaging);
     const loginEl = el.querySelector('[data-pubky-post-login]');
     if (loginEl) startLogin(loginEl, { base });
     bindReplyActions(el, base, useStaging);
