@@ -72,9 +72,13 @@
     }
 
     .wizard-user {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
       padding: 10px 14px; border-radius: 10px; background: #f8fafc;
       margin-bottom: 24px; text-align: left;
+    }
+    .wizard-user__identity {
+      display: flex; align-items: center; gap: 10px;
+      min-width: 0; flex: 1;
     }
     .wizard-user__avatar {
       width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
@@ -118,8 +122,9 @@
     }
 
     .signout-link {
-      margin-top: 20px; background: none; border: none; color: #94a3b8;
+      margin-top: 0; padding: 0; background: none; border: none; color: #94a3b8;
       font-size: 13px; cursor: pointer; text-decoration: underline;
+      flex-shrink: 0;
     }
     .signout-link:hover { color: #64748b; }
 
@@ -224,8 +229,6 @@
       <div id="copy-status" class="copy-status"></div>
       <p class="snippet-note">Publish your blog post and view it, to initialize the comment widget.</p>
     </div>
-
-    <button id="wizard-signout" class="signout-link" type="button">Sign out</button>
   </div>
 
 </div>
@@ -259,13 +262,16 @@ function renderUserInfo(pkStr, pkZ32, profile) {
   const avatarSrc = `${NEXUS_ORIGIN}/static/avatar/${encodeURIComponent(pkZ32)}`;
   const fb = initials(profile?.name);
   $('wizard-user').innerHTML = `
-    <div class="wizard-user__avatar">
-      <img src="${avatarSrc}" alt="" onerror="this.remove()">${fb}
+    <div class="wizard-user__identity">
+      <div class="wizard-user__avatar">
+        <img src="${avatarSrc}" alt="" onerror="this.remove()">${fb}
+      </div>
+      <div class="wizard-user__meta">
+        <div class="wizard-user__name">${name}</div>
+        <div class="wizard-user__handle" title="${pkStr}">${shortKey(pkStr)}</div>
+      </div>
     </div>
-    <div class="wizard-user__meta">
-      <div class="wizard-user__name">${name}</div>
-      <div class="wizard-user__handle" title="${pkStr}">${shortKey(pkStr)}</div>
-    </div>
+    <button id="wizard-signout" class="signout-link" type="button">Sign out</button>
   `;
 }
 
