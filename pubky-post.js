@@ -1,6 +1,6 @@
-import { Pubky, AuthFlowKind } from 'https://cdn.jsdelivr.net/npm/@synonymdev/pubky@0.6.0/+esm';
-import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm';
-import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://cdn.jsdelivr.net/npm/pubky-app-specs@0.4.4/+esm';
+import { Pubky, AuthFlowKind } from 'https://esm.sh/@synonymdev/pubky@0.7.0';
+import QRCode from 'https://esm.sh/qrcode@1.5.4';
+import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://esm.sh/pubky-app-specs@0.4.4';
 
 const DEFAULT_BASE = 'https://nexus.pubky.app/v0';
 const STAGING_BASE = 'https://nexus.staging.pubky.app/v0';
