@@ -380,20 +380,10 @@ function replyActionsHtml(author, postId) {
   `;
 }
 
-function renderHtml(post, user, base, useStaging) {
+function renderHtml(post, _user, base, useStaging) {
   const d = post.details || {};
-  const name = user?.details?.name || 'Unknown';
   return `
     <div class="pubky-post__login" data-pubky-post-login></div>
-    <div class="pubky-post__header">
-      <div class="pubky-post__avatar">${renderAvatar(user, base)}</div>
-      <div class="pubky-post__meta">
-        <div class="pubky-post__name">${escapeHtml(name)}</div>
-        <div class="pubky-post__handle" title="${escapeHtml(d.author || '')}">${escapeHtml(shortId(d.author))}</div>
-      </div>
-      <div class="pubky-post__time">${timeHtml(d, useStaging)}</div>
-    </div>
-    <div class="pubky-post__content">${escapeHtml(d.content)}</div>
     ${replyActionsHtml(d.author, d.id)}
     <div class="pubky-post__replies" data-pubky-replies>
       <div class="pubky-post--loading">Loading replies…</div>
@@ -602,11 +592,8 @@ async function render(el, opts) {
       return null;
     }
     if (!postRes.ok) throw new Error('HTTP ' + postRes.status);
-    const [postData, userData] = await Promise.all([
-      postRes.json(),
-      fetchJson(`${base}/user/${encodeURIComponent(author)}`).catch(() => null),
-    ]);
-    el.innerHTML = renderHtml(postData, userData, base, useStaging);
+    const postData = await postRes.json();
+    el.innerHTML = renderHtml(postData, null, base, useStaging);
     const loginEl = el.querySelector('[data-pubky-post-login]');
     if (loginEl) startLogin(loginEl, { base });
     bindReplyActions(el, base, useStaging);
