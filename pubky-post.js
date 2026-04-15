@@ -144,17 +144,19 @@ const POST_CSS = `
     width:auto;padding:7px 14px;font-size:13px;border-radius:8px;
   }
   .pubky-post__login .pubky-login__user{
-    display:flex;align-items:center;gap:10px;
+    display:flex;align-items:center;gap:8px;flex-wrap:nowrap;
     padding:8px 10px;border:1px solid var(--pp-border);
     border-radius:10px;background:rgba(99,102,241,.04);
   }
-  .pubky-post__login .pubky-login__avatar{width:32px;height:32px;font-size:12px}
-  .pubky-post__login .pubky-login__name{font-size:13px;color:var(--pp-fg)}
-  .pubky-post__login .pubky-login__handle{font-size:11px;color:var(--pp-muted)}
+  .pubky-post__login .pubky-login__avatar{width:28px;height:28px;font-size:11px}
+  .pubky-post__login .pubky-login__text{font-size:12px;color:var(--pp-muted)}
+  .pubky-post__login .pubky-login__name-link{color:var(--pp-accent);font-weight:600}
+  .pubky-post__login .pubky-login__name-link:hover{text-decoration:underline}
   .pubky-post__login .pubky-login__logout{
     background:transparent;color:var(--pp-muted);border:0;
-    font-size:12px;font-weight:500;padding:0;width:auto;
+    font-size:11px;font-weight:500;padding:0;width:auto;
     border-radius:0;text-decoration:underline;cursor:pointer;
+    margin-left:auto;white-space:nowrap;
   }
   .pubky-post__login .pubky-login__logout:hover{color:var(--pp-fg)}
   .pubky-post__reply-actions{margin-top:8px}
@@ -239,21 +241,18 @@ const LOGIN_CSS = `
   .pubky-login a{display:block;text-align:center;margin-top:8px;color:#6366f1;
     font-size:13px;text-decoration:none;word-break:break-all}
   .pubky-login__status{font-size:13px;color:#64748b;margin-top:8px;text-align:center}
-  .pubky-login__user{display:flex;align-items:center;gap:12px}
-  .pubky-login__avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;
+  .pubky-login__user{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+  .pubky-login__avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;
     background:linear-gradient(135deg,#6366f1,#8b5cf6);object-fit:cover;
     display:flex;align-items:center;justify-content:center;color:#fff;
-    font-weight:600;font-size:15px;overflow:hidden}
+    font-weight:600;font-size:12px;overflow:hidden}
   .pubky-login__avatar img{width:100%;height:100%;object-fit:cover}
-  .pubky-login__name{font-weight:600;font-size:15px;color:#0f172a;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .pubky-login__handle{font-size:12px;color:#64748b;
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
-  .pubky-login__meta{min-width:0;flex:1}
+  .pubky-login__text{font-size:13px;color:#64748b;white-space:nowrap}
+  .pubky-login__name-link{color:#6366f1;text-decoration:none;font-weight:600;white-space:nowrap}
+  .pubky-login__name-link:hover{text-decoration:underline}
   .pubky-login__logout{margin-left:auto;background:none;border:0;
     color:#64748b;font-size:12px;cursor:pointer;text-decoration:underline;
-    flex-shrink:0}
+    flex-shrink:0;padding:0;width:auto;white-space:nowrap}
   .pubky-login__err{color:#b91c1c;font-size:13px;text-align:center}
 `;
 
@@ -680,16 +679,14 @@ function renderSignedIn(el, base, z32, user) {
   const origin = String(base).replace(/\/v0\/?$/, '');
   const avatarSrc = `${origin}/static/avatar/${encodeURIComponent(z32)}`;
   const fallback = escapeHtml(initials(user?.details?.name));
+  const profileUrl = pubkyProfileUrl(z32, false);
 
   el.innerHTML = `
     <div class="pubky-login__user">
       <div class="pubky-login__avatar">
         <img src="${escapeHtml(avatarSrc)}" alt="" onerror="this.remove()">${fallback}
       </div>
-      <div class="pubky-login__meta">
-        <div class="pubky-login__name">${escapeHtml(name)}</div>
-        <div class="pubky-login__handle" title="${escapeHtml(z32)}">${escapeHtml(shortId(z32))}</div>
-      </div>
+      <span class="pubky-login__text">You are logged in as <a href="${escapeHtml(profileUrl)}" target="_blank" rel="noopener noreferrer" class="pubky-login__name-link">${escapeHtml(name)}</a>.</span>
       <button class="pubky-login__logout" type="button">Sign out</button>
     </div>
   `;
