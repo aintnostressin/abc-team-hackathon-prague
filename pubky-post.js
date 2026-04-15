@@ -55,6 +55,12 @@ const POST_CSS = `
     font-weight:600;color:var(--pp-fg);font-size:15px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
+  .pubky-post__name a{
+    color:inherit;text-decoration:none;
+  }
+  .pubky-post__name a:hover{
+    text-decoration:underline;
+  }
   .pubky-post__handle{
     font-size:12px;color:var(--pp-muted);
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -256,6 +262,11 @@ function pubkyPostUrl(postId, authorId, useStaging) {
   return `https://${host}/post/${encodeURIComponent(authorId)}/${encodeURIComponent(postId)}`;
 }
 
+function pubkyProfileUrl(authorId, useStaging) {
+  const host = useStaging ? 'staging.pubky.app' : 'pubky.app';
+  return `https://${host}/profile/${encodeURIComponent(authorId)}`;
+}
+
 function initials(name) {
   if (!name) return '?';
   return name.trim().split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
@@ -289,9 +300,15 @@ function setAuth(next) {
   try { window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { z32: authState.z32 } })); } catch {}
 }
 
-function timeHtml(d, useStaging) {
+function timeHtml(d, useStaging, titleText) {
   const s = escapeHtml(formatTime(d.indexed_at));
-  return d.id && d.author ? `<a href="${escapeHtml(pubkyPostUrl(d.id, d.author, useStaging))}" target="_blank" rel="noopener noreferrer">${s}</a>` : s;
+  const title = titleText ? ` title="${escapeHtml(titleText)}"` : '';
+  return d.id && d.author ? `<a href="${escapeHtml(pubkyPostUrl(d.id, d.author, useStaging))}" target="_blank" rel="noopener noreferrer"${title}>${s}</a>` : s;
+}
+
+function profileNameHtml(name, authorId, useStaging) {
+  const s = escapeHtml(name);
+  return authorId ? `<a href="${escapeHtml(pubkyProfileUrl(authorId, useStaging))}" target="_blank" rel="noopener noreferrer" title="Open profile in pubky.app">${s}</a>` : s;
 }
 
 function replyActionsHtml(author, postId) {
@@ -347,9 +364,9 @@ function renderReplyHtml(reply, user, hasChildren, base, useStaging) {
       <div class="pubky-post__avatar">${renderAvatar(user, base)}</div>
       <div class="pubky-post__reply-body">
         <div class="pubky-post__reply-head">
-          <div class="pubky-post__name">${escapeHtml(name)}</div>
+          <div class="pubky-post__name">${profileNameHtml(name, d.author, useStaging)}</div>
           <div class="pubky-post__handle" title="${escapeHtml(d.author || '')}">${escapeHtml(shortId(d.author))}</div>
-          <div class="pubky-post__time" style="margin-left:auto">${timeHtml(d, useStaging)}</div>
+          <div class="pubky-post__time" style="margin-left:auto">${timeHtml(d, useStaging, 'Open reply in pubky.app')}</div>
         </div>
         <div class="pubky-post__content">${escapeHtml(d.content)}</div>
         ${replyActionsHtml(d.author, d.id)}
