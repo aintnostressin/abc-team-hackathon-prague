@@ -113,6 +113,14 @@ const POST_CSS = `
   }
   .pubky-post__reply .pubky-post__replies-title{font-size:11px}
   .pubky-post__replies-empty{font-size:13px;color:var(--pp-muted)}
+  .pubky-post__tags{
+    display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;
+  }
+  .pubky-post__tag{
+    font-size:11px;font-weight:500;padding:2px 8px;border-radius:12px;
+    background:rgba(99,102,241,.1);color:var(--pp-accent);
+    border:1px solid rgba(99,102,241,.2);
+  }
   .pubky-post__login.pubky-login{
     margin:0 0 12px 0;width:100%;max-width:none;
     display:flex;flex-direction:column;align-items:center;text-align:center;
@@ -278,6 +286,26 @@ async function fetchJson(url) {
   return res.json();
 }
 
+async function fetchPostTags(base, author, postId) {
+  try {
+    const url = `${base}/post/${encodeURIComponent(author)}/${encodeURIComponent(postId)}/tags`;
+    const tags = await fetchJson(url);
+    if (!Array.isArray(tags)) return [];
+    // Normalize tag format to always return an array of label strings
+    return tags.map(tag => tag?.label || tag?.tag_label || tag).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function renderTagsHtml(tags) {
+  if (!Array.isArray(tags) || tags.length === 0) return '';
+  const tagElements = tags.map(label => 
+    `<span class="pubky-post__tag">${escapeHtml(label)}</span>`
+  ).join('');
+  return `<div class="pubky-post__tags">${tagElements}</div>`;
+}
+
 function avatarUrl(base, user) {
   const { id, image: img } = user?.details || {};
   if (!id || !img) return null;
@@ -353,12 +381,13 @@ function renderHtml(post, user, base, useStaging) {
 
 const MAX_REPLY_DEPTH = 6;
 
-function renderReplyHtml(reply, user, hasChildren, base, useStaging) {
+function renderReplyHtml(reply, user, hasChildren, base, useStaging, tags) {
   const d = reply.details || {};
   const name = user?.details?.name || 'Unknown';
   const nested = hasChildren
     ? `<div class="pubky-post__replies" data-pubky-replies data-pubky-reply-author="${escapeHtml(d.author || '')}" data-pubky-reply-id="${escapeHtml(d.id || '')}"><div class="pubky-post--loading">Loading replies…</div></div>`
     : '';
+  const tagsHtml = renderTagsHtml(tags);
   return `
     <div class="pubky-post__reply">
       <div class="pubky-post__avatar">${renderAvatar(user, base)}</div>
@@ -369,6 +398,7 @@ function renderReplyHtml(reply, user, hasChildren, base, useStaging) {
           <div class="pubky-post__time" style="margin-left:auto">${timeHtml(d, useStaging, 'Open reply in pubky.app')}</div>
         </div>
         <div class="pubky-post__content">${escapeHtml(d.content)}</div>
+        ${tagsHtml}
         ${replyActionsHtml(d.author, d.id)}
         ${nested}
       </div>
@@ -462,7 +492,7 @@ function bindReplyActions(root, base, useStaging) {
           };
           container.innerHTML = `
             <div class="pubky-post__replies-title">Your reply (waiting for Nexus to index…)</div>
-            ${renderReplyHtml(optimistic, me, false, base, useStaging)}
+            ${renderReplyHtml(optimistic, me, false, base, useStaging, [])}
           `;
           bindReplyActions(container, base, useStaging);
           updateReplyActions(container);
@@ -495,14 +525,23 @@ async function renderReplies(container, base, author, post, depth, useStaging) {
         : '';
       return;
     }
-    const users = await Promise.all(replies.map(r => {
-      const a = r?.details?.author;
-      return a ? fetchJson(`${base}/user/${encodeURIComponent(a)}`).catch(() => null) : null;
+    // Extract author and id from each reply once for API calls
+    const replyIdentifiers = replies.map(r => ({
+      author: r?.details?.author,
+      id: r?.details?.id
     }));
+    const [users, tags] = await Promise.all([
+      Promise.all(replyIdentifiers.map(d =>
+        d.author ? fetchJson(`${base}/user/${encodeURIComponent(d.author)}`).catch(() => null) : null
+      )),
+      Promise.all(replyIdentifiers.map(d =>
+        (d.author && d.id) ? fetchPostTags(base, d.author, d.id) : []
+      ))
+    ]);
     const canRecurse = depth + 1 < MAX_REPLY_DEPTH;
     const items = replies.map((r, i) => {
       const hasChildren = canRecurse && r?.counts?.replies > 0;
-      return renderReplyHtml(r, users[i], hasChildren, base, useStaging);
+      return renderReplyHtml(r, users[i], hasChildren, base, useStaging, tags[i]);
     }).join('');
     container.innerHTML = `
       <div class="pubky-post__replies-title">${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}</div>
