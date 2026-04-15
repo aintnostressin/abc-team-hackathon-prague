@@ -1,6 +1,6 @@
-import { Pubky, AuthFlowKind } from 'https://cdn.jsdelivr.net/npm/@synonymdev/pubky@0.6.0/+esm';
-import QRCode from 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm';
-import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://cdn.jsdelivr.net/npm/pubky-app-specs@0.4.4/+esm';
+import { Pubky, AuthFlowKind } from 'https://esm.sh/@synonymdev/pubky@0.7.0';
+import QRCode from 'https://esm.sh/qrcode@1.5.4';
+import { PubkySpecsBuilder, PubkyAppPostKind } from 'https://esm.sh/pubky-app-specs@0.4.4';
 
 const DEFAULT_BASE = 'https://nexus.pubky.app/v0';
 const STAGING_BASE = 'https://nexus.staging.pubky.app/v0';
@@ -68,6 +68,12 @@ const POST_CSS = `
     font-weight:600;color:var(--pp-fg);font-size:15px;
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
+  .pubky-post__name a{
+    color:inherit;text-decoration:none;
+  }
+  .pubky-post__name a:hover{
+    text-decoration:underline;
+  }
   .pubky-post__handle{
     font-size:12px;color:var(--pp-muted);
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -120,6 +126,14 @@ const POST_CSS = `
   }
   .pubky-post__reply .pubky-post__replies-title{font-size:11px}
   .pubky-post__replies-empty{font-size:13px;color:var(--pp-muted)}
+  .pubky-post__tags{
+    display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;
+  }
+  .pubky-post__tag{
+    font-size:11px;font-weight:500;padding:2px 8px;border-radius:12px;
+    background:rgba(99,102,241,.1);color:var(--pp-accent);
+    border:1px solid rgba(99,102,241,.2);
+  }
   .pubky-post__login.pubky-login{
     margin:0 0 12px 0;width:100%;max-width:none;
     display:flex;flex-direction:column;align-items:center;text-align:center;
@@ -269,6 +283,11 @@ function pubkyPostUrl(postId, authorId, useStaging) {
   return `https://${host}/post/${encodeURIComponent(authorId)}/${encodeURIComponent(postId)}`;
 }
 
+function pubkyProfileUrl(authorId, useStaging) {
+  const host = useStaging ? 'staging.pubky.app' : 'pubky.app';
+  return `https://${host}/profile/${encodeURIComponent(authorId)}`;
+}
+
 function initials(name) {
   if (!name) return '?';
   return name.trim().split(/\s+/).map(p => p[0]).slice(0, 2).join('').toUpperCase();
@@ -278,6 +297,26 @@ async function fetchJson(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error('HTTP ' + res.status + ' for ' + url);
   return res.json();
+}
+
+async function fetchPostTags(base, author, postId) {
+  try {
+    const url = `${base}/post/${encodeURIComponent(author)}/${encodeURIComponent(postId)}/tags`;
+    const tags = await fetchJson(url);
+    if (!Array.isArray(tags)) return [];
+    // Normalize tag format to always return an array of label strings
+    return tags.map(tag => tag?.label || tag?.tag_label || tag).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function renderTagsHtml(tags) {
+  if (!Array.isArray(tags) || tags.length === 0) return '';
+  const tagElements = tags.map(label => 
+    `<span class="pubky-post__tag">${escapeHtml(label)}</span>`
+  ).join('');
+  return `<div class="pubky-post__tags">${tagElements}</div>`;
 }
 
 function avatarUrl(base, user) {
@@ -302,9 +341,15 @@ function setAuth(next) {
   try { window.dispatchEvent(new CustomEvent(AUTH_EVENT, { detail: { z32: authState.z32 } })); } catch {}
 }
 
-function timeHtml(d, useStaging) {
+function timeHtml(d, useStaging, titleText) {
   const s = escapeHtml(formatTime(d.indexed_at));
-  return d.id && d.author ? `<a href="${escapeHtml(pubkyPostUrl(d.id, d.author, useStaging))}" target="_blank" rel="noopener noreferrer">${s}</a>` : s;
+  const title = titleText ? ` title="${escapeHtml(titleText)}"` : '';
+  return d.id && d.author ? `<a href="${escapeHtml(pubkyPostUrl(d.id, d.author, useStaging))}" target="_blank" rel="noopener noreferrer"${title}>${s}</a>` : s;
+}
+
+function profileNameHtml(name, authorId, useStaging) {
+  const s = escapeHtml(name);
+  return authorId ? `<a href="${escapeHtml(pubkyProfileUrl(authorId, useStaging))}" target="_blank" rel="noopener noreferrer" title="Open profile in pubky.app">${s}</a>` : s;
 }
 
 function replyActionsHtml(author, postId) {
@@ -349,22 +394,24 @@ function renderHtml(post, user, base, useStaging) {
 
 const MAX_REPLY_DEPTH = 6;
 
-function renderReplyHtml(reply, user, hasChildren, base, useStaging) {
+function renderReplyHtml(reply, user, hasChildren, base, useStaging, tags) {
   const d = reply.details || {};
   const name = user?.details?.name || 'Unknown';
   const nested = hasChildren
     ? `<div class="pubky-post__replies" data-pubky-replies data-pubky-reply-author="${escapeHtml(d.author || '')}" data-pubky-reply-id="${escapeHtml(d.id || '')}"><div class="pubky-post--loading">Loading replies…</div></div>`
     : '';
+  const tagsHtml = renderTagsHtml(tags);
   return `
     <div class="pubky-post__reply">
       <div class="pubky-post__avatar">${renderAvatar(user, base)}</div>
       <div class="pubky-post__reply-body">
         <div class="pubky-post__reply-head">
-          <div class="pubky-post__name">${escapeHtml(name)}</div>
+          <div class="pubky-post__name">${profileNameHtml(name, d.author, useStaging)}</div>
           <div class="pubky-post__handle" title="${escapeHtml(d.author || '')}">${escapeHtml(shortId(d.author))}</div>
-          <div class="pubky-post__time" style="margin-left:auto">${timeHtml(d, useStaging)}</div>
+          <div class="pubky-post__time" style="margin-left:auto">${timeHtml(d, useStaging, 'Open reply in pubky.app')}</div>
         </div>
         <div class="pubky-post__content">${escapeHtml(d.content)}</div>
+        ${tagsHtml}
         ${replyActionsHtml(d.author, d.id)}
         ${nested}
       </div>
@@ -458,7 +505,7 @@ function bindReplyActions(root, base, useStaging) {
           };
           container.innerHTML = `
             <div class="pubky-post__replies-title">Your reply (waiting for Nexus to index…)</div>
-            ${renderReplyHtml(optimistic, me, false, base, useStaging)}
+            ${renderReplyHtml(optimistic, me, false, base, useStaging, [])}
           `;
           bindReplyActions(container, base, useStaging);
           updateReplyActions(container);
@@ -491,14 +538,23 @@ async function renderReplies(container, base, author, post, depth, useStaging) {
         : '';
       return;
     }
-    const users = await Promise.all(replies.map(r => {
-      const a = r?.details?.author;
-      return a ? fetchJson(`${base}/user/${encodeURIComponent(a)}`).catch(() => null) : null;
+    // Extract author and id from each reply once for API calls
+    const replyIdentifiers = replies.map(r => ({
+      author: r?.details?.author,
+      id: r?.details?.id
     }));
+    const [users, tags] = await Promise.all([
+      Promise.all(replyIdentifiers.map(d =>
+        d.author ? fetchJson(`${base}/user/${encodeURIComponent(d.author)}`).catch(() => null) : null
+      )),
+      Promise.all(replyIdentifiers.map(d =>
+        (d.author && d.id) ? fetchPostTags(base, d.author, d.id) : []
+      ))
+    ]);
     const canRecurse = depth + 1 < MAX_REPLY_DEPTH;
     const items = replies.map((r, i) => {
       const hasChildren = canRecurse && r?.counts?.replies > 0;
-      return renderReplyHtml(r, users[i], hasChildren, base, useStaging);
+      return renderReplyHtml(r, users[i], hasChildren, base, useStaging, tags[i]);
     }).join('');
     container.innerHTML = `
       <div class="pubky-post__replies-title">${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}</div>
